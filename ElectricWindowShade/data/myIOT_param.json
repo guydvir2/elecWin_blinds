@@ -1,0 +1,14 @@
+{
+    "useSerial": false,
+    "useWDT": true,
+    "useOTA": true,
+    "useFailNTP": true,
+    "useDebugLog": true,
+    "useResetKeeper": true,
+    "useNetworkReset":true,
+    "deviceTopic": "saloonExit",
+    "groupTopic": "Windows",
+    "prefixTopic": "myHome",
+    "debug_level":0,
+    "noNetwork_reset":5
+}
