@@ -5,7 +5,7 @@
 #define JSON_SIZE_IOT 400
 #define JSON_SIZE_SKETCH 200
 #define JSON_SERIAL_SIZE 300
-#define VER "ESP8266_0.7"
+#define VER "ESP8266_0.71"
 
 #include "myIOT_settings.h"
 #include "win_param.h"
@@ -50,10 +50,6 @@ void Serial_CB(JsonDocument &_doc)
         {
                 sprintf(outmsg, "[%s]: Window [%s]", INFO, ACT);
                 iot.pub_msg(outmsg);
-                if (strcmp(ACT, "off") != 0)
-                {
-                        // autoOff_clkUpdate();
-                }
         }
         else if (strcmp(ACT, "query") == 0)
         {
