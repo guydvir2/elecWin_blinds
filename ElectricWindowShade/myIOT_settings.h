@@ -95,8 +95,10 @@ void startIOTservices()
     iot.useDebug = paramJSON["useDebugLog"];
     iot.debug_level = paramJSON["debug_level"]; //All operations are monitored
     iot.useBootClockLog = true;
+    iot.useNetworkReset = paramJSON["useNetworkReset"];
+    iot.noNetwork_reset = paramJSON["noNetwork_reset"];
     strcpy(iot.deviceTopic, paramJSON["deviceTopic"]);
     strcpy(iot.prefixTopic, paramJSON["prefixTopic"]);
     strcpy(iot.addGroupTopic, paramJSON["groupTopic"]);
-    iot.start_services(addiotnalMQTT); //, SSID_ID, PASS_WIFI, MQTT_USER, MQTT_PASS, "192.168.3.201");
+    iot.start_services(addiotnalMQTT);
 }

@@ -1,4 +1,3 @@
-#include <myIOT2.h>
 #include <ArduinoJson.h>
 
 bool readfile_ok = false;

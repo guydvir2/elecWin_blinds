@@ -1,11 +1,13 @@
 {
-    "useExtInput": true,
+    "useExtInput": false,
     "useAutoRelayOFF": true,
     "AutoRelayOff_timeout": 90,
-    "inputUpPin": 14,
-    "inputDownPin": 12,
-    "outputUpPin": 5,
-    "outputDownPin": 4,
+    "inputUpPin": 4,
+    "inputDownPin": 5,
+    "outputUpPin": 14,
+    "outputDownPin": 12,
     "inputUpExtPin": 0,
     "inputDownExtPin": 2
 }
+
+

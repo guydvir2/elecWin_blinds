@@ -6,6 +6,7 @@ bool DUAL_SW = false;
 bool ERR_PROTECT = true;
 bool USE_TO = true;
 byte TO_DURATION = 10;
+time_t bootTime;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #define WAIT_FOR_PARAM_DURATION 15
@@ -30,7 +31,6 @@ const byte MIN2RESET_BAD_P = 30UL; // Minutes
 
 unsigned long autoOff_clock = 0;
 bool getP_OK = false; // Flag, external parameters got OK ?
-time_t bootTime;
 
 bool swUp_lastState = !SW_PRESSED;
 bool swDown_lastState = !SW_PRESSED;
@@ -46,26 +46,6 @@ enum sys_states : const byte
 };
 
 void (*resetFunc)(void) = 0;
-
-// ~~~~~~~~~ generate Uptime ~~~~~~~~
-#define SECS_PER_MIN (60UL)
-#define SECS_PER_HOUR (3600UL)
-#define SECS_PER_DAY (SECS_PER_HOUR * 24L)
-
-#define numberOfSeconds(_time_) (_time_ % SECS_PER_MIN)
-#define numberOfMinutes(_time_) ((_time_ / SECS_PER_MIN) % SECS_PER_MIN)
-#define numberOfHours(_time_) ((_time_ % SECS_PER_DAY) / SECS_PER_HOUR)
-#define elapsedDays(_time_) (_time_ / SECS_PER_DAY)
-
-void calc_time(long val, char *ret_clk)
-{
-  int days = elapsedDays(val);
-  int hours = numberOfHours(val);
-  int minutes = numberOfMinutes(val);
-  int seconds = numberOfSeconds(val);
-
-  sprintf(ret_clk, "%01dd %02d:%02d:%02d", days, hours, minutes, seconds);
-}
 
 // ~~~~~~~~~  Serial Communication ~~~~~~~~
 void sendMSG(char *msg, char *addinfo = NULL)
@@ -150,11 +130,8 @@ void Serial_CB(JsonDocument &_doc)
   else if (strcmp(ACT, "query") == 0)
   {
     char t[200];
-    char clk[25];
     char clk2[25];
-    // calc_time(millis() / 1000, clk);
     sprintf(clk2, "%02d-%02d-%02d %02d:%02d:%02d", year(bootTime), month(bootTime), day(bootTime), hour(bootTime), minute(bootTime), second(bootTime));
-    // sprintf(t, "ver[%s], MCU[%s], upTime[%s], DualSW[%s], ErrProtect[%s], bootTime[%s]", VER, MCU_TYPE, clk, DUAL_SW ? "YES" : "NO", ERR_PROTECT ? "YES" : "NO", clk2);
     sprintf(t, "ver[%s], MCU[%s], DualSW[%s], ErrProtect[%s], bootTime[%s],Auto-Off[%s], Auto-Off_TO[%d]",
             VER, MCU_TYPE, DUAL_SW ? "YES" : "NO", ERR_PROTECT ? "YES" : "NO", clk2, USE_TO ? "YES" : "NO", TO_DURATION);
     sendMSG("query", t);
@@ -438,6 +415,7 @@ void reset_fail_load_parameters()
   }
 }
 
+
 void setup()
 {
   Serial.begin(9600);
@@ -460,5 +438,4 @@ void loop()
   readSerial();
   autoOff_looper();
   reset_fail_load_parameters();
-  delay(50);
 }

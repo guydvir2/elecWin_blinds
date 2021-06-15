@@ -4,24 +4,6 @@
 #include "win_param.h"
 #include <Arduino.h>
 
-bool services_chk()
-{
-        bool ntp = iot.NTP_OK;
-        bool wifi = WiFi.isConnected();
-        bool mqtt = iot.mqttClient.connected();
-
-        if (!(wifi && mqtt && ntp))
-        {
-                char a[50];
-                sprintf(a, "Services error: WiFi[%s] MQTT[%s] NTP[%s]", wifi ? "OK" : "FAIL", mqtt ? "OK" : "FAIL", ntp ? "OK" : "FAIL");
-                iot.pub_log(a);
-                return 0;
-        }
-        else
-        {
-                return 1;
-        }
-}
 void check_bootclockLOG()
 {
         char a[100];
@@ -50,27 +32,10 @@ void check_bootclockLOG()
         Serial.println(first_to_last);
         Serial.print("min: ");
         Serial.println(first_to_second);
-}
-void check_reboot_reason()
-{
-        static bool checkAgain = true;
-        if (checkAgain)
-        {
-                if (iot.mqtt_detect_reset != 2)
-                {
-                        char a[30];
-                        checkAgain = false;
-                        if (iot.mqtt_detect_reset == 0)
-                        {
-                                sprintf(a, "Boot Type: [%s]", "Boot");
-                        }
-                        else if (iot.mqtt_detect_reset == 1)
-                        {
-                                sprintf(a, "Boot Type: [%s]", "Quick-Reset");
-                        }
-                        iot.pub_log(a);
-                }
-        }
+        Serial.print("rem_a: ");
+        Serial.println(rem_a);
+        Serial.print("rem_b: ");
+        Serial.println(rem_b);
 }
 
 void startGPIOs()
@@ -204,9 +169,6 @@ void setup()
         startGPIOs();
         startIOTservices();
         endRead_parameters();
-
-        services_chk();
-        check_bootclockLOG();
 }
 void loop()
 {
@@ -224,6 +186,5 @@ void loop()
         {
                 checkTimeout_AutoRelay_Off(AutoRelayOff_timeout);
         }
-        check_reboot_reason();
         delay(100);
 }
