@@ -172,13 +172,6 @@ void setup()
 }
 void loop()
 {
-        // static unsigned long lastWrite = 0;
-        // if (millis() - lastWrite > 1000)
-        // {
-        //         iot.flog.write("H!!!");
-        //         // iot.flog.writeNow();
-        //         lastWrite = millis();
-        // }
         iot.looper();
         verifyNotHazardState(); // both up and down are ---> OFF
 
