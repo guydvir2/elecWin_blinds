@@ -1,7 +1,7 @@
 #include <ArduinoJson.h>
 
 // ********** Sketch Services  ***********
-#define VER "WEMOS_7.01"
+#define VER "WEMOS_7.1"
 #define RelayOn LOW
 #define SwitchOn LOW
 #define USE_BOUNCE_DEBUG false
