@@ -6,7 +6,7 @@
     "useDebugLog": true,
     "useResetKeeper": true,
     "useNetworkReset":true,
-    "deviceTopic": "testBed",
+    "deviceTopic": "testBed2",
     "groupTopic": "Windows",
     "prefixTopic": "myHome",
     "debug_level":0,

@@ -5,7 +5,7 @@
 #define JSON_SIZE_IOT 400
 #define JSON_SIZE_SKETCH 200
 #define JSON_SERIAL_SIZE 300
-#define VER "ESP8266_0.71"
+#define VER "ESP8266_0.72"
 
 #include "myIOT_settings.h"
 #include "win_param.h"
@@ -50,6 +50,12 @@ void Serial_CB(JsonDocument &_doc)
         {
                 sprintf(outmsg, "[%s]: Window [%s]", INFO, ACT);
                 iot.pub_msg(outmsg);
+                // if (strcmp(INFO, "Auto-Off") != 0)
+                // {
+                //         char state[10];
+                //         sprintf(state, "%s", ACT);
+                //         iot.pub_state(state);
+                // }
         }
         else if (strcmp(ACT, "query") == 0)
         {
@@ -58,8 +64,8 @@ void Serial_CB(JsonDocument &_doc)
         }
         else if (strcmp(ACT, "Boot") == 0)
         {
-                const char* FROM= _doc["from"];
-                sprintf(outmsg, "[%s]: << Power On Boot >>",FROM);
+                const char *FROM = _doc["from"];
+                sprintf(outmsg, "[%s]: << Power On Boot >>", FROM);
                 iot.pub_log(outmsg);
         }
         else if (strcmp(ACT, "status") == 0)

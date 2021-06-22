@@ -13,7 +13,7 @@ time_t bootTime;
 #define JSON_SERIAL_SIZE 300
 
 #define VER "Arduino_v1.2"
-#define MCU_TYPE "Uno+WiFi"
+#define MCU_TYPE "ProMini"
 #define DEV_NAME "MCU"
 
 #define REL_DOWN_PIN 10  /* OUTUPT to relay device */
@@ -22,6 +22,7 @@ time_t bootTime;
 #define SW2_DOWN_PIN 4 /* Switch2 INPUT to Arduino */
 #define SW_DOWN_PIN 2   /* Switch1 INPUT to Arduino */
 #define SW_UP_PIN 3     /* Switch1 INPUT to Arduino */
+
 #define RELAY_ON LOW
 #define SW_PRESSED LOW
 
