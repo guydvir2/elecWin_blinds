@@ -38,6 +38,12 @@ bool swDown_lastState = !SW_PRESSED;
 bool swUp2_lastState = !SW_PRESSED;
 bool swDown2_lastState = !SW_PRESSED;
 
+/* Interrupts try*/
+
+volatile bool swUp_lastState_v = !SW_PRESSED;
+volatile bool swDown_lastState_v = !SW_PRESSED;
+volatile bool changeDet_v = false;
+
 enum sys_states : const byte
 {
   WIN_STOP,
@@ -212,14 +218,28 @@ void postBoot_err_notification()
 }
 
 // ~~~~~~ Handling Inputs & Outputs ~~~~~~~
+void pressedUP()
+{
+  swUp_lastState_v = digitalRead(SW_UP_PIN);
+  changeDet_v = true;
+}
+void pressedDOWN()
+{
+  swDown_lastState_v = digitalRead(SW_DOWN_PIN);
+  changeDet_v = true;
+}
 void start_gpio()
 {
   pinMode(REL_UP_PIN, OUTPUT);
   pinMode(REL_DOWN_PIN, OUTPUT);
   pinMode(SW_UP_PIN, INPUT_PULLUP);
   pinMode(SW_DOWN_PIN, INPUT_PULLUP);
-  swUp_lastState = digitalRead(SW_UP_PIN);
-  swDown_lastState = digitalRead(SW_DOWN_PIN);
+
+  attachInterrupt(digitalPinToInterrupt(SW_UP_PIN), pressedUP, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(SW_DOWN_PIN), pressedDOWN, CHANGE);
+
+  swUp_lastState_v = digitalRead(SW_UP_PIN);
+  swDown_lastState_v = digitalRead(SW_DOWN_PIN);
 
   if (DUAL_SW)
   {
@@ -428,6 +448,29 @@ void reset_fail_load_parameters()
   }
 }
 
+void chng_loop()
+{
+  if (changeDet_v)
+  {
+    changeDet_v = false;
+    allOff();
+    if (swUp_lastState_v == SW_PRESSED && swDown_lastState_v == !SW_PRESSED)
+    {
+      makeSwitch(WIN_UP);
+      sendMSG("up", "Button");
+    }
+    else if (swUp_lastState_v == !SW_PRESSED && swDown_lastState_v == SW_PRESSED)
+    {
+      makeSwitch(WIN_DOWN);
+      sendMSG("down", "Button");
+    }
+    else
+    {
+      makeSwitch(WIN_STOP);
+      sendMSG("off", "Button");
+    }
+  }
+}
 void setup()
 {
   Serial.begin(9600);
@@ -437,8 +480,9 @@ void setup()
 }
 void loop()
 {
-  readInputs_looper();
-  errorProtection(); /* Avoid Simulatnious UP&DOWN */
+  // readInputs_looper();
+  // errorProtection(); /* Avoid Simulatnious UP&DOWN */
+  chng_loop();
   readSerial();
   autoOff_looper();
   reset_fail_load_parameters();
