@@ -1,11 +1,11 @@
 #include <myIOT2.h>
 #include <Arduino.h>
 
-#define DEV_NAME "ESP"
+#define DEV_NAME "WEMOSmini"
 #define JSON_SIZE_IOT 400
 #define JSON_SIZE_SKETCH 200
 #define JSON_SERIAL_SIZE 300
-#define VER "ESP8266_0.72"
+#define VER "ESP8266_V0.73"
 
 #include "myIOT_settings.h"
 #include "win_param.h"
@@ -25,9 +25,9 @@ void sendMSG(char *msg, char *addinfo)
                 doc["info"] = addinfo;
         }
 
-        serializeJson(doc, Serial);
+        serializeJson(doc, Serial); /* Sending MSG over serial to other MCU */
 }
-void sendBOOT_P()
+void getBOOT_P()
 {
         StaticJsonDocument<JSON_SERIAL_SIZE> doc;
         doc["from"] = DEV_NAME;
@@ -50,12 +50,12 @@ void Serial_CB(JsonDocument &_doc)
         {
                 sprintf(outmsg, "[%s]: Window [%s]", INFO, ACT);
                 iot.pub_msg(outmsg);
-                // if (strcmp(INFO, "Auto-Off") != 0)
-                // {
-                //         char state[10];
-                //         sprintf(state, "%s", ACT);
-                //         iot.pub_state(state);
-                // }
+                if (strcmp(INFO, "Auto-Off") != 0)
+                {
+                        char state[10];
+                        sprintf(state, "%s", ACT);
+                        iot.pub_state(state);
+                }
         }
         else if (strcmp(ACT, "query") == 0)
         {
@@ -80,7 +80,7 @@ void Serial_CB(JsonDocument &_doc)
         }
         else if (strcmp(ACT, "boot_p") == 0)
         {
-                sendBOOT_P();
+                getBOOT_P();
         }
 }
 void readSerial()
@@ -108,7 +108,6 @@ void setup()
         startRead_parameters();
         startIOTservices();
         endRead_parameters();
-        services_chk();
 
         Serial.begin(9600); /* Serial is defined not using IOT - else it spits all debug msgs */
 }

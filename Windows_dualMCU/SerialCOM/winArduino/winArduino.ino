@@ -5,7 +5,7 @@
 bool DUAL_SW = false;
 bool ERR_PROTECT = true;
 bool USE_TO = true;
-byte TO_DURATION = 10;
+byte TO_DURATION = 60;
 time_t bootTime;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -16,19 +16,19 @@ time_t bootTime;
 #define MCU_TYPE "ProMini"
 #define DEV_NAME "MCU"
 
-#define REL_DOWN_PIN 10  /* OUTUPT to relay device */
-#define REL_UP_PIN 11    /* OUTUPT to relay device */
-#define SW2_UP_PIN 5   /* Switch2 INPUT to Arduino */
-#define SW2_DOWN_PIN 4 /* Switch2 INPUT to Arduino */
 #define SW_DOWN_PIN 2   /* Switch1 INPUT to Arduino */
 #define SW_UP_PIN 3     /* Switch1 INPUT to Arduino */
+#define SW2_DOWN_PIN 4  /* Switch2 INPUT to Arduino */
+#define SW2_UP_PIN 5    /* Switch2 INPUT to Arduino */
+#define REL_DOWN_PIN 10 /* OUTUPT to relay device */
+#define REL_UP_PIN 11   /* OUTUPT to relay device */
 
 #define RELAY_ON LOW
 #define SW_PRESSED LOW
 
 const byte change_dir_delay = 100; //ms
 const byte debounce_delay = 50;    //ms
-const byte MIN2RESET_BAD_P = 30UL; // Minutes
+const byte MIN2RESET_BAD_P = 30;   // Minutes to reset due to not getting Remote Parameters
 
 unsigned long autoOff_clock = 0;
 bool getP_OK = false; // Flag, external parameters got OK ?
@@ -165,8 +165,8 @@ void readSerial()
 }
 void getRemote_param(byte _waitDuration = 15)
 {
-  sendMSG("boot_p");
-  while (millis() < _waitDuration * 1000 && getP_OK == false)
+  sendMSG("boot_p");                                          /* calling for remote parameters */
+  while (millis() < _waitDuration * 1000 && getP_OK == false) /* Wait to get parameters */
   {
     if (Serial.available() > 0)
     {
@@ -196,6 +196,18 @@ void getRemote_param(byte _waitDuration = 15)
       }
     }
     delay(50);
+  }
+}
+void postBoot_err_notification()
+{
+  sendMSG("Boot");
+  if (year(bootTime) == 1970)
+  {
+    sendMSG("Error", "NTP");
+  }
+  if (getP_OK == false)
+  {
+    sendMSG("Error", "Parameters");
   }
 }
 
@@ -408,7 +420,7 @@ void autoOff_looper()
 }
 void reset_fail_load_parameters()
 {
-  if (getP_OK == false && millis() > MIN2RESET_BAD_P * 1000 * 60)
+  if (getP_OK == false && millis() > MIN2RESET_BAD_P * 1000UL * 60)
   {
     sendMSG("Error", "Reset");
     delay(1000);
@@ -416,21 +428,12 @@ void reset_fail_load_parameters()
   }
 }
 
-
 void setup()
 {
   Serial.begin(9600);
-  getRemote_param(WAIT_FOR_PARAM_DURATION);
   start_gpio();
-  sendMSG("Boot");
-  if (year(bootTime) == 1970)
-  {
-    sendMSG("Error", "NTP");
-  }
-  if (getP_OK == false)
-  {
-    sendMSG("Error", "Parameters");
-  }
+  getRemote_param(WAIT_FOR_PARAM_DURATION);
+  postBoot_err_notification();
 }
 void loop()
 {
