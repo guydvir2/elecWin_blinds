@@ -7,12 +7,14 @@ bool ERR_PROTECT = true;
 bool USE_TO = true;
 byte TO_DURATION = 60;
 time_t bootTime;
+int del_loop = 2; // millis
+int del_off = 100; // millis
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #define WAIT_FOR_PARAM_DURATION 15
 #define JSON_SERIAL_SIZE 300
 
-#define VER "Arduino_v1.2"
+#define VER "Arduino_v1.3"
 #define MCU_TYPE "ProMini"
 #define DEV_NAME "MCU"
 
@@ -26,7 +28,6 @@ time_t bootTime;
 #define RELAY_ON LOW
 #define SW_PRESSED LOW
 
-const byte change_dir_delay = 100; //ms
 const byte debounce_delay = 50;    //ms
 const byte MIN2RESET_BAD_P = 30;   // Minutes to reset due to not getting Remote Parameters
 
@@ -133,8 +134,8 @@ void Serial_CB(JsonDocument &_doc)
     char t[200];
     char clk2[25];
     sprintf(clk2, "%02d-%02d-%02d %02d:%02d:%02d", year(bootTime), month(bootTime), day(bootTime), hour(bootTime), minute(bootTime), second(bootTime));
-    sprintf(t, "ver[%s], MCU[%s], DualSW[%s], ErrProtect[%s], bootTime[%s],Auto-Off[%s], Auto-Off_TO[%d]",
-            VER, MCU_TYPE, DUAL_SW ? "YES" : "NO", ERR_PROTECT ? "YES" : "NO", clk2, USE_TO ? "YES" : "NO", TO_DURATION);
+    sprintf(t, "ver[%s], MCU[%s], DualSW[%s], ErrProtect[%s], bootTime[%s],Auto-Off[%s], Auto-Off_TO[%d],%d,%d",
+            VER, MCU_TYPE, DUAL_SW ? "YES" : "NO", ERR_PROTECT ? "YES" : "NO", clk2, USE_TO ? "YES" : "NO", TO_DURATION, del_off,del_loop);
     sendMSG("query", t);
   }
   else if (strcmp(ACT, "boot_p") == 0)
@@ -145,6 +146,8 @@ void Serial_CB(JsonDocument &_doc)
     USE_TO = _doc["t_out"];
     TO_DURATION = _doc["t_out_d"];
     bootTime = _doc["boot_t"];
+    del_loop = _doc["del_loop"];
+    del_off = _doc["del_off"];
   }
 }
 void readSerial()
@@ -159,7 +162,7 @@ void readSerial()
     }
     else
     {
-      sendMSG("Error", "Serial-Recv");
+      sendMSG("error", "Serial-Recv");
     }
   }
 }
@@ -203,11 +206,11 @@ void postBoot_err_notification()
   sendMSG("Boot");
   if (year(bootTime) == 1970)
   {
-    sendMSG("Error", "NTP");
+    sendMSG("error", "NTP");
   }
   if (getP_OK == false)
   {
-    sendMSG("Error", "Parameters");
+    sendMSG("error", "Parameters");
   }
 }
 
@@ -234,7 +237,7 @@ void allOff()
 {
   digitalWrite(REL_UP_PIN, !RELAY_ON);
   digitalWrite(REL_DOWN_PIN, !RELAY_ON);
-  delay(change_dir_delay);
+  delay(del_off);
 }
 byte getWin_state()
 {
@@ -317,7 +320,7 @@ void errorProtection()
     {
       if (digitalRead(SW2_UP_PIN) == SW_PRESSED && digitalRead(SW2_DOWN_PIN) == SW_PRESSED)
       {
-        sendMSG("Error", "ExButtons");
+        sendMSG("error", "ExButtons");
         delay(100);
         resetFunc();
       }
@@ -422,7 +425,7 @@ void reset_fail_load_parameters()
 {
   if (getP_OK == false && millis() > MIN2RESET_BAD_P * 1000UL * 60)
   {
-    sendMSG("Error", "Reset");
+    sendMSG("error", "Reset");
     delay(1000);
     resetFunc();
   }
@@ -442,4 +445,5 @@ void loop()
   readSerial();
   autoOff_looper();
   reset_fail_load_parameters();
+  delay(del_loop);
 }

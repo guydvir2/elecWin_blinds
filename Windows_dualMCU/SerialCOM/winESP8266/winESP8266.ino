@@ -5,7 +5,7 @@
 #define JSON_SIZE_IOT 400
 #define JSON_SIZE_SKETCH 200
 #define JSON_SERIAL_SIZE 300
-#define VER "ESP8266_V0.73"
+#define VER "ESP8266_V0.9"
 
 #include "myIOT_settings.h"
 #include "win_param.h"
@@ -37,6 +37,8 @@ void getBOOT_P()
         doc["t_out"] = useAutoOff;
         doc["t_out_d"] = autoOff_time;
         doc["boot_t"] = now();
+        doc["del_off"] = del_off;
+        doc["del_loop"] = del_loop;
         serializeJson(doc, Serial);
 }
 void Serial_CB(JsonDocument &_doc)
@@ -73,7 +75,7 @@ void Serial_CB(JsonDocument &_doc)
                 sprintf(outmsg, "[%s]: Window [%s]", "Status", INFO);
                 iot.pub_msg(outmsg);
         }
-        else if (strcmp(ACT, "Error") == 0)
+        else if (strcmp(ACT, "error") == 0)
         {
                 sprintf(outmsg, "[%s]: [%s]; from[%s]", "Error", INFO, FROM);
                 iot.pub_msg(outmsg);
@@ -81,6 +83,11 @@ void Serial_CB(JsonDocument &_doc)
         else if (strcmp(ACT, "boot_p") == 0)
         {
                 getBOOT_P();
+        }
+        else
+        {
+                sprintf(outmsg, "[%s]: [Unknown]; from[%s]", "Error", FROM);
+                iot.pub_msg(outmsg);
         }
 }
 void readSerial()
@@ -115,5 +122,5 @@ void loop()
 {
         iot.looper();
         readSerial();
-        delay(50);
+        // delay(50);
 }

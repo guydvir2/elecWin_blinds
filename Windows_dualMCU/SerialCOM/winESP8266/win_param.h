@@ -5,6 +5,8 @@ bool useAutoOff = false;
 bool doubleSW = false;
 bool err_protect = false;
 int autoOff_time = 300;
+int del_loop = 50;
+int del_off = 100;
 
 char *sketch_paramfile = "/sketch_param.json";
 StaticJsonDocument<JSON_SIZE_IOT> paramJSON;
@@ -18,6 +20,8 @@ void update_vars(JsonDocument &DOC)
   autoOff_time = DOC["autoOff_time"];
   err_protect = DOC["err_protect"];
   doubleSW = DOC["doubleSW"];
+  del_loop = DOC["del_loop"];
+  del_off = DOC["del_off"];
 }
 void startRead_parameters()
 {
