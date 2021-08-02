@@ -27,6 +27,7 @@ void startSwitch()
         windowSwitch.pin0 = inputUpPin;
         windowSwitch.pin1 = inputDownPin;
         windowSwitch.buttonType = 2;
+        // windowSwitch.buttonType = 200;
         windowSwitch.start();
 
         if (useExtInput)
