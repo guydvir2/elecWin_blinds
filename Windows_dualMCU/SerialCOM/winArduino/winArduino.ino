@@ -7,29 +7,36 @@ bool ERR_PROTECT = true;
 bool USE_TO = true;
 byte TO_DURATION = 60;
 time_t bootTime;
-int del_loop = 2; // millis
+int del_loop = 2;  // millis
 int del_off = 100; // millis
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #define WAIT_FOR_PARAM_DURATION 15
 #define JSON_SERIAL_SIZE 300
 
-#define VER "Arduino_v1.3"
+#define VER "Arduino_v1.32"
 #define MCU_TYPE "ProMini"
 #define DEV_NAME "MCU"
 
-#define SW_DOWN_PIN 2   /* Switch1 INPUT to Arduino */
-#define SW_UP_PIN 3     /* Switch1 INPUT to Arduino */
+// #define SW_DOWN_PIN 2   /* Switch1 INPUT to Arduino */
+// #define SW_UP_PIN 3     /* Switch1 INPUT to Arduino */
+// #define SW2_DOWN_PIN 4  /* Switch2 INPUT to Arduino */
+// #define SW2_UP_PIN 5    /* Switch2 INPUT to Arduino */
+// #define REL_DOWN_PIN 10 /* OUTUPT to relay device */
+// #define REL_UP_PIN 11   /* OUTUPT to relay device */
+
+#define SW_DOWN_PIN 4   /* Switch1 INPUT to Arduino */
+#define SW_UP_PIN 5     /* Switch1 INPUT to Arduino */
 #define SW2_DOWN_PIN 4  /* Switch2 INPUT to Arduino */
 #define SW2_UP_PIN 5    /* Switch2 INPUT to Arduino */
-#define REL_DOWN_PIN 10 /* OUTUPT to relay device */
-#define REL_UP_PIN 11   /* OUTUPT to relay device */
+#define REL_DOWN_PIN 3 /* OUTUPT to relay device */
+#define REL_UP_PIN 2   /* OUTUPT to relay device */
 
 #define RELAY_ON LOW
 #define SW_PRESSED LOW
 
-const byte debounce_delay = 50;    //ms
-const byte MIN2RESET_BAD_P = 30;   // Minutes to reset due to not getting Remote Parameters
+const byte debounce_delay = 50;  //ms
+const byte MIN2RESET_BAD_P = 30; // Minutes to reset due to not getting Remote Parameters
 
 unsigned long autoOff_clock = 0;
 bool getP_OK = false; // Flag, external parameters got OK ?
@@ -78,10 +85,10 @@ void Serial_CB(JsonDocument &_doc)
     {
       sendMSG(ACT, INFO);
     }
-    else
-    {
-      sendMSG("error", "window state");
-    }
+    // else
+    // {
+    //   sendMSG("error", "window state");
+    // }
   }
   else if (strcmp(ACT, "down") == 0)
   {
@@ -89,10 +96,10 @@ void Serial_CB(JsonDocument &_doc)
     {
       sendMSG(ACT, INFO);
     }
-    else
-    {
-      sendMSG("error", "window state");
-    }
+    // else
+    // {
+    //   sendMSG("error", "window state");
+    // }
   }
   else if (strcmp(ACT, "off") == 0)
   {
@@ -100,10 +107,10 @@ void Serial_CB(JsonDocument &_doc)
     {
       sendMSG(ACT, INFO);
     }
-    else
-    {
-      sendMSG("error", "window state");
-    }
+    // else
+    // {
+    //   sendMSG("error", "window state");
+    // }
   }
   else if (strcmp(ACT, "reset_MCU") == 0)
   {
@@ -135,7 +142,7 @@ void Serial_CB(JsonDocument &_doc)
     char clk2[25];
     sprintf(clk2, "%02d-%02d-%02d %02d:%02d:%02d", year(bootTime), month(bootTime), day(bootTime), hour(bootTime), minute(bootTime), second(bootTime));
     sprintf(t, "ver[%s], MCU[%s], DualSW[%s], ErrProtect[%s], bootTime[%s],Auto-Off[%s], Auto-Off_TO[%d],%d,%d",
-            VER, MCU_TYPE, DUAL_SW ? "YES" : "NO", ERR_PROTECT ? "YES" : "NO", clk2, USE_TO ? "YES" : "NO", TO_DURATION, del_off,del_loop);
+            VER, MCU_TYPE, DUAL_SW ? "YES" : "NO", ERR_PROTECT ? "YES" : "NO", clk2, USE_TO ? "YES" : "NO", TO_DURATION, del_off, del_loop);
     sendMSG("query", t);
   }
   else if (strcmp(ACT, "boot_p") == 0)
@@ -148,6 +155,13 @@ void Serial_CB(JsonDocument &_doc)
     bootTime = _doc["boot_t"];
     del_loop = _doc["del_loop"];
     del_off = _doc["del_off"];
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  }
+  else
+  {
+    char output[120];
+    serializeJson(_doc, output);
+    sendMSG("error", output);
   }
 }
 void readSerial()

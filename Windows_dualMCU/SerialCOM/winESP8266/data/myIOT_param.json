@@ -7,7 +7,7 @@
     "useResetKeeper": false,
     "useNetworkReset": true,
     "useBootClockLog": false,
-    "deviceTopic": "parentsRoom",
+    "deviceTopic": "familyRoom",
     "groupTopic": "Windows",
     "prefixTopic": "myHome",
     "debug_level": 0,

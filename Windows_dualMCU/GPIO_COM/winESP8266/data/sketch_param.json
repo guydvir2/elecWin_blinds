@@ -1,8 +1,0 @@
-{
-    "relayUpPin": 14,
-    "relayDownPin": 12,
-    "outputUpPin": 5,
-    "outputDownPin": 4,
-    "useAutoOff": true,
-    "autoOff_time": 120
-}

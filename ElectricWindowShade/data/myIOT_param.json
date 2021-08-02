@@ -6,7 +6,7 @@
     "useDebugLog": false,
     "useResetKeeper": true,
     "useNetworkReset":true,
-    "deviceTopic": "saloonDual",
+    "deviceTopic": "saloonSingle",
     "groupTopic": "Windows",
     "prefixTopic": "myHome",
     "debug_level":0,
