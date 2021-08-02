@@ -2,7 +2,7 @@
 #include <buttonPresses.h>
 
 // ********** Sketch Services  ***********
-#define VER "WEMOS_8.0"
+#define VER "WinCtrl_8.0"
 #define RelayOn LOW
 
 bool useExtInput;
@@ -27,6 +27,7 @@ void startSwitch()
         windowSwitch.pin0 = inputUpPin;
         windowSwitch.pin1 = inputDownPin;
         windowSwitch.buttonType = 2;
+        windowSwitch.start();
 
         if (useExtInput)
         {
@@ -36,6 +37,7 @@ void startSwitch()
                 buttSwitchEXT[0]->pin0 = inputUpExtPin;
                 buttSwitchEXT[0]->pin1 = inputDownExtPin;
                 buttSwitchEXT[0]->buttonType = 2;
+                buttSwitchEXT[0]->start();
         }
 }
 void readSwitch()
@@ -64,11 +66,12 @@ void allOff()
 {
         digitalWrite(outputUpPin, !RelayOn);
         digitalWrite(outputDownPin, !RelayOn);
+        delay(50);
 }
 void switchIt(char *type, uint8_t dir)
 {
         char mqttmsg[50];
-        const char *st[] = {"nan", "Up", "Down", "Off"};
+        const char *st[] = {"nan", "up", "down", "off"};
 
         if (dir == 3)
         {
@@ -84,8 +87,9 @@ void switchIt(char *type, uint8_t dir)
                 allOff();
                 digitalWrite(outputUpPin, RelayOn);
         }
-
-        iot.pub_state("st[dir]");
+        
+        sprintf(mqttmsg,"%s",st[dir]);
+        iot.pub_state(mqttmsg);
         sprintf(mqttmsg, "%s: Switched [%s]", type, st[dir]);
         iot.pub_msg(mqttmsg);
 

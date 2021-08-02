@@ -5,7 +5,7 @@
 bool DUAL_SW = false;
 bool ERR_PROTECT = true;
 bool USE_TO = true;
-byte TO_DURATION = 60;
+uint8_t TO_DURATION = 60;
 time_t bootTime;
 int del_loop = 2;  // millis
 int del_off = 100; // millis
@@ -35,8 +35,8 @@ int del_off = 100; // millis
 #define RELAY_ON LOW
 #define SW_PRESSED LOW
 
-const byte debounce_delay = 50;  //ms
-const byte MIN2RESET_BAD_P = 30; // Minutes to reset due to not getting Remote Parameters
+const uint8_t debounce_delay = 50;  //ms
+const uint8_t MIN2RESET_BAD_P = 30; // Minutes to reset due to not getting Remote Parameters
 
 unsigned long autoOff_clock = 0;
 bool getP_OK = false; // Flag, external parameters got OK ?
@@ -46,7 +46,7 @@ bool swDown_lastState = !SW_PRESSED;
 bool swUp2_lastState = !SW_PRESSED;
 bool swDown2_lastState = !SW_PRESSED;
 
-enum sys_states : const byte
+enum sys_states : const uint8_t
 {
   WIN_STOP,
   WIN_UP,
@@ -118,7 +118,7 @@ void Serial_CB(JsonDocument &_doc)
   }
   else if (strcmp(ACT, "status") == 0)
   {
-    byte a = getWin_state();
+    uint8_t a = getWin_state();
     switch (a)
     {
     case WIN_DOWN:
@@ -180,7 +180,7 @@ void readSerial()
     }
   }
 }
-void getRemote_param(byte _waitDuration = 15)
+void getRemote_param(uint8_t _waitDuration = 15)
 {
   sendMSG("boot_p");                                          /* calling for remote parameters */
   while (millis() < _waitDuration * 1000 && getP_OK == false) /* Wait to get parameters */
@@ -201,7 +201,7 @@ void getRemote_param(byte _waitDuration = 15)
     }
     else
     {
-      static byte loopCounter = 0; /* This part is needed when ESP has not completed boot process */
+      static uint8_t loopCounter = 0; /* This part is needed when ESP has not completed boot process */
       if (loopCounter > 5)
       {
         delay(1000);
@@ -253,7 +253,7 @@ void allOff()
   digitalWrite(REL_DOWN_PIN, !RELAY_ON);
   delay(del_off);
 }
-byte getWin_state()
+uint8_t getWin_state()
 {
   bool relup = digitalRead(REL_UP_PIN);
   bool reldown = digitalRead(REL_DOWN_PIN);
@@ -275,7 +275,7 @@ byte getWin_state()
     return WIN_ERR;
   }
 }
-bool makeSwitch(byte state)
+bool makeSwitch(uint8_t state)
 {
   if (getWin_state() != state) /* Not already in that state */
   {
