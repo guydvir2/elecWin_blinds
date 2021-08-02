@@ -7,5 +7,6 @@
     "outputUpPin": 14,
     "outputDownPin": 12,
     "inputUpExtPin": 0,
-    "inputDownExtPin": 2
+    "inputDownExtPin": 2,
+    "ver": 0.1
 }

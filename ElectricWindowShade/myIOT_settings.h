@@ -1,10 +1,10 @@
 #include <myIOT2.h>
+#include "win_param.h"
 
 myIOT2 iot;
+
 extern char *sketch_paramfile;
-extern void switchIt(char *type, char *dir);
-extern StaticJsonDocument<JSON_SIZE_IOT> paramJSON;
-extern StaticJsonDocument<JSON_SIZE_SKETCH> sketchJSON;
+extern void switchIt(char *type, uint8_t dir);
 
 void addiotnalMQTT(char *incoming_msg)
 {
@@ -34,24 +34,36 @@ void addiotnalMQTT(char *incoming_msg)
         }
 
         // switch state
-        if (inputUp_lastState == !RelayOn && inputDown_lastState == !RelayOn)
-        {
-            sprintf(state2, "OFF");
-        }
-        else if (inputUp_lastState == RelayOn && inputDown_lastState == !RelayOn)
-        {
-            sprintf(state2, "UP");
-        }
-        else if (inputUp_lastState == !RelayOn && inputDown_lastState == RelayOn)
-        {
-            sprintf(state2, "DOWN");
-        }
-        sprintf(msg, "Status: Relay:[%s], Switch:[%s]", state, state2);
+        //         uint8_t readSW = windowSwitch.getValue();
+        // if (inputUp_lastState == !RelayOn && inputDown_lastState == !RelayOn)
+        // {
+        //     sprintf(state2, "OFF");
+        // }
+        // else if (inputUp_lastState == RelayOn && inputDown_lastState == !RelayOn)
+        // {
+        //     sprintf(state2, "UP");
+        // }
+        // else if (inputUp_lastState == !RelayOn && inputDown_lastState == RelayOn)
+        // {
+        //     sprintf(state2, "DOWN");
+        // }
+        // if(digitalRead)
+        // sprintf(msg, "Status: Relay:[%s], Switch:[%s]", state, state2);
+        sprintf(msg, "Status: Relay:[%s]", state);
+
         iot.pub_msg(msg);
     }
-    else if (strcmp(incoming_msg, "up") == 0 || strcmp(incoming_msg, "down") == 0 || strcmp(incoming_msg, "off") == 0)
+    else if (strcmp(incoming_msg, "up") == 0)
     {
-        switchIt("MQTT", incoming_msg);
+        switchIt("MQTT", 1);
+    }
+    else if (strcmp(incoming_msg, "down") == 0)
+    {
+        switchIt("MQTT", 2);
+    }
+    else if (strcmp(incoming_msg, "off") == 0)
+    {
+        switchIt("MQTT", 3);
     }
     else if (strcmp(incoming_msg, "ver2") == 0)
     {
@@ -91,7 +103,6 @@ void startIOTservices()
     iot.useWDT = paramJSON["useWDT"];
     iot.useOTA = paramJSON["useOTA"];
     iot.useResetKeeper = paramJSON["useResetKeeper"];
-    iot.resetFailNTP = paramJSON["useFailNTP"];
     iot.useDebug = paramJSON["useDebugLog"];
     iot.debug_level = paramJSON["debug_level"]; //All operations are monitored
     iot.useBootClockLog = true;
