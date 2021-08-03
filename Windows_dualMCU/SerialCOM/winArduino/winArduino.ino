@@ -1,5 +1,8 @@
 #include <ArduinoJson.h>
 #include <TimeLib.h>
+#include <buttonPresses.h>
+#include <Arduino.h>
+
 
 // ~~~~ Services update via ESP on BOOT ~~~~~
 bool DUAL_SW = false;
@@ -25,10 +28,10 @@ int del_off = 100; // millis
 // #define REL_DOWN_PIN 10 /* OUTUPT to relay device */
 // #define REL_UP_PIN 11   /* OUTUPT to relay device */
 
-#define SW_DOWN_PIN 4   /* Switch1 INPUT to Arduino */
-#define SW_UP_PIN 5     /* Switch1 INPUT to Arduino */
-#define SW2_DOWN_PIN 4  /* Switch2 INPUT to Arduino */
-#define SW2_UP_PIN 5    /* Switch2 INPUT to Arduino */
+#define SW_DOWN_PIN 4  /* Switch1 INPUT to Arduino */
+#define SW_UP_PIN 5    /* Switch1 INPUT to Arduino */
+#define SW2_DOWN_PIN 4 /* Switch2 INPUT to Arduino */
+#define SW2_UP_PIN 5   /* Switch2 INPUT to Arduino */
 #define REL_DOWN_PIN 3 /* OUTUPT to relay device */
 #define REL_UP_PIN 2   /* OUTUPT to relay device */
 
@@ -85,10 +88,6 @@ void Serial_CB(JsonDocument &_doc)
     {
       sendMSG(ACT, INFO);
     }
-    // else
-    // {
-    //   sendMSG("error", "window state");
-    // }
   }
   else if (strcmp(ACT, "down") == 0)
   {
@@ -96,10 +95,6 @@ void Serial_CB(JsonDocument &_doc)
     {
       sendMSG(ACT, INFO);
     }
-    // else
-    // {
-    //   sendMSG("error", "window state");
-    // }
   }
   else if (strcmp(ACT, "off") == 0)
   {
@@ -107,10 +102,6 @@ void Serial_CB(JsonDocument &_doc)
     {
       sendMSG(ACT, INFO);
     }
-    // else
-    // {
-    //   sendMSG("error", "window state");
-    // }
   }
   else if (strcmp(ACT, "reset_MCU") == 0)
   {
@@ -228,6 +219,14 @@ void postBoot_err_notification()
   }
 }
 
+buttonPresses windowSW;
+void startWin()
+{
+  windowSW.pin0 = SW_UP_PIN;
+  windowSW.pin1 = SW_DOWN_PIN;
+  windowSW.buttonType = 2;
+  windowSW.start();
+}
 // ~~~~~~ Handling Inputs & Outputs ~~~~~~~
 void start_gpio()
 {
