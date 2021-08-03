@@ -2,14 +2,14 @@
     "useSerial": false, 
     "useWDT": true,
     "useOTA": true,
-    "useFailNTP": true,
     "useDebugLog": true,
     "useResetKeeper": false,
     "useNetworkReset": true,
     "useBootClockLog": false,
-    "deviceTopic": "familyRoom",
+    "deviceTopic": "test",
     "groupTopic": "Windows",
     "prefixTopic": "myHome",
     "debug_level": 0,
-    "noNetwork_reset": 20
+    "noNetwork_reset": 20,
+    "ver":0.2
 }

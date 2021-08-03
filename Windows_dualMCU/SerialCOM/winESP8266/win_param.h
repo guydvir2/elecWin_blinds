@@ -4,9 +4,9 @@ bool readfile_ok = false;
 bool useAutoOff = false;
 bool doubleSW = false;
 bool err_protect = false;
-int autoOff_time = 300;
-int del_loop = 50;
-int del_off = 100;
+uint8_t autoOff_time = 200;
+uint8_t del_loop = 50;
+uint8_t del_off = 100;
 
 char *sketch_paramfile = "/sketch_param.json";
 StaticJsonDocument<JSON_SIZE_IOT> paramJSON;
@@ -28,7 +28,7 @@ void startRead_parameters()
   String sketch_defs = "{\"useAutoOff\":false,\"autoOff_time\":60,\"doubleSW\":false,\"err_protect\":false}";
 
   String myIOT_defs = "{\"useSerial\":true,\"useWDT\":false,\"useOTA\":true,\"useResetKeeper\" : false,\"useBootClockLog\" : false,\
-                        \"useFailNTP\" : true,\"useDebugLog\" : true,\"useNetworkReset\":false, \"deviceTopic\" : \"myWindow\",\
+                        \"useDebugLog\" : true,\"useNetworkReset\":false, \"deviceTopic\" : \"myWindow\",\
                         \"groupTopic\" : \"Windows\",\"prefixTopic\" : \"myHome\",\"debug_level\":0,\"noNetwork_reset\":5}";
 
   bool a = iot.read_fPars(sketch_paramfile, sketch_defs, sketchJSON);

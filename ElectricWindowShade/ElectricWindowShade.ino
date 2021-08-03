@@ -1,22 +1,21 @@
 #include <Arduino.h>
 #include <buttonPresses.h>
 
-// ********** Sketch Services  ***********
 #define VER "WinCtrl_8.0"
 #define RelayOn LOW
 
+/* All Following parameters are updated using saved flash one */
 bool useExtInput;
 bool useAutoRelayOFF;
-uint8_t AutoRelayOff_timeout;
-unsigned long autoOff_clock = 0;
-
-//~~~~ Switches IOs~~~~~~
 uint8_t inputUpPin;
 uint8_t inputDownPin;
 uint8_t inputUpExtPin;
 uint8_t inputDownExtPin;
 uint8_t outputUpPin;
 uint8_t outputDownPin;
+uint8_t AutoRelayOff_timeout;
+unsigned long autoOff_clock = 0;
+/* ~~~~~~~~~~~~~~~~~~~~~~~~ Until Here ~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include "myIOT_settings.h"
 buttonPresses windowSwitch;
@@ -27,7 +26,7 @@ void startSwitch()
         windowSwitch.pin0 = inputUpPin;
         windowSwitch.pin1 = inputDownPin;
         windowSwitch.buttonType = 2;
-        // windowSwitch.buttonType = 200;
+        windowSwitch.debounce = 200;
         windowSwitch.start();
 
         if (useExtInput)
@@ -139,7 +138,6 @@ void loop()
 {
         iot.looper();
         verifyNotHazardState(); // both up and down are ---> OFF
-        readSwitch();
+        readSwitch();           /* delays in readSwitch 100ms */
         checkTimeout_AutoRelay_Off(AutoRelayOff_timeout);
-        // delay(100); /* No need - delays in readSwitch 100ms */
 }

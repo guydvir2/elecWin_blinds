@@ -4,7 +4,7 @@ myIOT2 iot;
 extern char *sketch_paramfile;
 extern void sendMSG(char *msg, char *addinfo = NULL);
 extern bool useAutoOff;
-extern int autoOff_time;
+extern uint8_t autoOff_time;
 
 extern StaticJsonDocument<JSON_SIZE_IOT> paramJSON;
 extern StaticJsonDocument<JSON_SIZE_SKETCH> sketchJSON;
@@ -63,7 +63,6 @@ void startIOTservices()
     iot.useWDT = paramJSON["useWDT"];
     iot.useOTA = paramJSON["useOTA"];
     iot.useResetKeeper = paramJSON["useResetKeeper"];
-    iot.resetFailNTP = paramJSON["useFailNTP"];
     iot.useDebug = paramJSON["useDebugLog"];
     iot.debug_level = paramJSON["debug_level"];
     iot.useBootClockLog = paramJSON["useBootClockLog"];
