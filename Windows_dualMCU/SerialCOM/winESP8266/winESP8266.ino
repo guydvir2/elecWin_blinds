@@ -1,4 +1,3 @@
-#include <myIOT2.h>
 #include <Arduino.h>
 
 #define DEV_NAME "WEMOS_mini"
@@ -12,8 +11,9 @@
 
 const char *winStates[] = {"Error", "up", "down", "off"};
 const char *serialKW[] = {"from", "act", "info", "error"};
-const char *serialCMD[] = {"status", "reset_MCU", "query", "boot_p", "Boot", "error"};
+const char *serialCMD[] = {"status", "reset_MCU", "query", "boot_p", "Boot", "error", "ping"};
 
+unsigned long lastAliveping = 0;
 void sendMSG(char *msg, char *addinfo)
 {
         StaticJsonDocument<JSON_SERIAL_SIZE> doc;
@@ -43,14 +43,33 @@ void send_boot_parameters()
         /* Following will update from flash */
         doc["err_p"] = err_protect;
         doc["dub_sw"] = doubleSW;
-        
+
         doc["t_out"] = useAutoOff;
         doc["t_out_d"] = autoOff_time;
         doc["boot_t"] = t;
         doc["del_off"] = del_off;
         doc["del_loop"] = del_loop;
+        doc["btype_2"] = btype_2;
+        doc["send_interval_minutes"] = send_interval_minutes;
 
         serializeJson(doc, Serial);
+}
+void checkAlive()
+{
+        static bool notifyAlert = false;
+
+        if (millis() - lastAliveping > send_interval_minutes * 1000 * 60UL + 200)
+        {
+                if (!notifyAlert)
+                {
+                        iot.pub_log("[MCU]: not Alive");
+                        notifyAlert = true;
+                }
+                else
+                {
+                        notifyAlert = false;
+                }
+        }
 }
 void Serial_CB(JsonDocument &_doc)
 {
@@ -75,6 +94,10 @@ void Serial_CB(JsonDocument &_doc)
                 sprintf(outmsg, "[%s]: %s", "Query", INFO);
                 iot.pub_msg(outmsg);
         }
+        else if (strcmp(ACT, serialCMD[3]) == 0)
+        {
+                send_boot_parameters();
+        }
         else if (strcmp(ACT, serialCMD[4]) == 0)
         {
                 const char *FROM = _doc[serialKW[0]];
@@ -91,9 +114,9 @@ void Serial_CB(JsonDocument &_doc)
                 sprintf(outmsg, "[%s]: [%s]; from[%s]", "Error", INFO, FROM);
                 iot.pub_msg(outmsg);
         }
-        else if (strcmp(ACT, serialCMD[3]) == 0)
+        else if (strcmp(INFO, serialCMD[6]) == 0)
         {
-                send_boot_parameters();
+                lastAliveping = millis();
         }
         else
         {
@@ -132,5 +155,6 @@ void loop()
 {
         iot.looper();
         readSerial();
+        checkAlive();
         // delay(50);
 }

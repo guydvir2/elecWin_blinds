@@ -7,6 +7,8 @@ bool err_protect = false;
 uint8_t autoOff_time = 200;
 uint8_t del_loop = 50;
 uint8_t del_off = 100;
+uint8_t send_interval_minutes = 10;
+uint8_t btype_2 = 2;
 
 char *sketch_paramfile = "/sketch_param.json";
 StaticJsonDocument<JSON_SIZE_IOT> paramJSON;
@@ -22,6 +24,9 @@ void update_vars(JsonDocument &DOC)
   doubleSW = DOC["doubleSW"];
   del_loop = DOC["del_loop"];
   del_off = DOC["del_off"];
+  btype_2 = DOC["btype_2"];
+  send_interval_minutes = DOC["send_interval_minutes"];
+
 }
 void startRead_parameters()
 {

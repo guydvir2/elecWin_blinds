@@ -28,6 +28,7 @@ uint8_t TO_DURATION = 60;
 uint8_t del_loop = 2;  // millis
 uint8_t del_off = 100; // millis
 uint8_t btype_2 = 2;   // Button Type
+uint8_t send_interval_minutes = 10;
 time_t bootTime;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -43,7 +44,7 @@ const uint8_t MIN2RESET_BAD_P = 30; /* Minutes to reset due to not getting Remot
 unsigned long autoOff_clock = 0;
 const char *winStates[] = {"Error", "up", "down", "off"};
 const char *serialKW[] = {"from", "act", "info", "error"};
-const char *serialCMD[] = {"status", "reset_MCU", "query", "boot_p", "Boot", "error"};
+const char *serialCMD[] = {"status", "reset_MCU", "query", "boot_p", "Boot", "error", "ping"};
 enum sys_states : const uint8_t
 {
   WIN_ERR,
@@ -54,7 +55,7 @@ enum sys_states : const uint8_t
 void (*resetFunc)(void) = 0;
 
 // ~~~~~~~~~  Serial Communication ~~~~~~~~
-// void msgCenter()
+
 void sendMSG(char *msg, char *addinfo = NULL)
 {
   StaticJsonDocument<JSON_SERIAL_SIZE> doc;
@@ -71,6 +72,16 @@ void sendMSG(char *msg, char *addinfo = NULL)
   }
   serializeJson(doc, Serial);
 }
+void sendAlive()
+{
+  static unsigned long lastTx = 0;
+  if (millis() - lastTx > send_interval_minutes * (1000 * 60UL))
+  {
+    lastTx = millis();
+    sendMSG(serialKW[2], serialCMD[6]);
+  }
+}
+
 void Serial_CB(JsonDocument &_doc)
 {
   const char *FROM = _doc[serialKW[0]];
