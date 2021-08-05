@@ -2,43 +2,44 @@
 
 #define DEV_NAME "WEMOS_mini"
 #define JSON_SIZE_IOT 400
-#define JSON_SIZE_SKETCH 200
-#define JSON_SERIAL_SIZE 300
+#define JSON_SIZE_SKETCH 300
+#define JSON_SERIAL_SIZE 450
 #define VER "ESP8266_V1.0"
 
 #include "myIOT_settings.h"
 #include "win_param.h"
 
-const char *winStates[] = {"Error", "up", "down", "off"};
-const char *serialKW[] = {"from", "act", "info", "error"};
-const char *serialCMD[] = {"status", "reset_MCU", "query", "boot_p", "Boot", "error", "ping"};
+char *winStates[] = {"Error", "up", "down", "off"};
+char *msgKW[] = {"from", "type", "info", "info2"};
+char *msgTypes[] = {"act", "info", "error"};
+char *msgAct[] = {winStates[1], winStates[2], winStates[3], "reset_MCU", "Auto-Off"};
+char *msgInfo[] = {"status", "query", "boot_p", "Boot", "error", "ping", "button", "MQTT"};
 
 unsigned long lastAliveping = 0;
-void sendMSG(char *msg, char *addinfo)
+
+void sendMSG(char *msgtype, char *addinfo, char *info2)
 {
         StaticJsonDocument<JSON_SERIAL_SIZE> doc;
 
-        doc[serialKW[0]] = DEV_NAME;
-        doc[serialKW[1]] = msg;
-        if (addinfo == NULL)
-        {
-                doc[serialKW[2]] = "none";
-        }
-        else
-        {
-                doc[serialKW[2]] = addinfo;
-        }
+        doc[msgKW[0]] = DEV_NAME;
+        doc[msgKW[1]] = msgtype;
+        doc[msgKW[2]] = addinfo;
+        doc[msgKW[3]] = info2;
 
+        char testouput[200];
         serializeJson(doc, Serial); /* Sending MSG over serial to other MCU */
+        // serializeJson(doc, testouput);
+        // iot.pub_msg(testouput);
 }
 void send_boot_parameters()
 {
         uint8_t offset_HRS = 2;
-        unsigned long t = time(nullptr) + offset_HRS * 3600;
+        unsigned long t = time(nullptr);//+ offset_HRS * 3600;
         StaticJsonDocument<JSON_SERIAL_SIZE> doc;
 
-        doc["from"] = DEV_NAME;
-        doc["act"] = serialCMD[3];
+        doc[msgKW[0]] = DEV_NAME;
+        doc[msgKW[1]] = msgTypes[1];
+        doc[msgKW[2]] = msgInfo[2];
 
         /* Following will update from flash */
         doc["err_p"] = err_protect;
@@ -46,82 +47,63 @@ void send_boot_parameters()
 
         doc["t_out"] = useAutoOff;
         doc["t_out_d"] = autoOff_time;
+        // doc["boot_t"] = 1628101312;
         doc["boot_t"] = t;
         doc["del_off"] = del_off;
         doc["del_loop"] = del_loop;
         doc["btype_2"] = btype_2;
-        doc["send_interval_minutes"] = send_interval_minutes;
+        doc["Alive_int"] = Alive_int;
 
         serializeJson(doc, Serial);
-}
-void checkAlive()
-{
-        static bool notifyAlert = false;
 
-        if (millis() - lastAliveping > send_interval_minutes * 1000 * 60UL + 200)
-        {
-                if (!notifyAlert)
-                {
-                        iot.pub_log("[MCU]: not Alive");
-                        notifyAlert = true;
-                }
-                else
-                {
-                        notifyAlert = false;
-                }
-        }
 }
 void Serial_CB(JsonDocument &_doc)
 {
         char outmsg[100];
-        const char *FROM = _doc[serialKW[0]];
-        const char *ACT = _doc[serialKW[1]];
-        const char *INFO = _doc[serialKW[2]];
+        const char *FROM = _doc[msgKW[0]];
+        const char *TYPE = _doc[msgKW[1]];
+        const char *INFO = _doc[msgKW[2]];
+        const char *INFO2 = _doc[msgKW[3]];
 
-        if (strcmp(ACT, winStates[1]) == 0 || strcmp(ACT, winStates[2]) == 0 || strcmp(ACT, winStates[3]) == 0)
+        // char testouput[100];
+        // serializeJson(_doc, testouput);
+        // iot.pub_msg(testouput);
+
+        if (strcmp(TYPE, msgTypes[1]) == 0) /* Getting Info */
         {
-                sprintf(outmsg, "[%s]: Window [%s]", INFO, ACT);
-                iot.pub_msg(outmsg);
-                if (strcmp(INFO, "Auto-Off") != 0)
+                if (strcmp(INFO, msgAct[0]) == 0 || strcmp(INFO, msgAct[1]) == 0 || strcmp(INFO, msgAct[2]) == 0)
                 {
-                        char state[10];
-                        sprintf(state, "%s", ACT);
-                        iot.pub_state(state);
+                        sprintf(outmsg, "[%s]: Window switched [%s]", INFO2, INFO);
+                        iot.pub_msg(outmsg);
+                }
+                else if (strcmp(INFO, msgInfo[2]) == 0) /* boot_p */
+                {
+                        send_boot_parameters();
+                }
+                else if (strcmp(INFO, msgInfo[1]) == 0) /* Query */
+                {
+                        sprintf(outmsg, "[%s]: %s", INFO, INFO2);
+                        iot.pub_msg(outmsg);
+                }
+                else if (strcmp(INFO, msgInfo[3]) == 0) /* Boot */
+                {
+                        sprintf(outmsg, "[%s]: << Power On Boot >>", FROM);
+                        iot.pub_log(outmsg);
                 }
         }
-        else if (strcmp(ACT, serialCMD[2]) == 0)
+        else if (strcmp(TYPE, msgTypes[0]) == 0) /*  Actions */
         {
-                sprintf(outmsg, "[%s]: %s", "Query", INFO);
-                iot.pub_msg(outmsg);
+                if (strcmp(INFO, msgAct[0]) == 0 || strcmp(INFO, msgAct[1]) == 0 || strcmp(INFO, msgAct[2]) == 0)
+                {
+                        sprintf(outmsg, "[%s]: Window switched [%s]", INFO2, INFO);
+                        iot.pub_msg(outmsg);
+                }
         }
-        else if (strcmp(ACT, serialCMD[3]) == 0)
+        else if (strcmp(TYPE, msgTypes[2]) == 0)
         {
-                send_boot_parameters();
-        }
-        else if (strcmp(ACT, serialCMD[4]) == 0)
-        {
-                const char *FROM = _doc[serialKW[0]];
-                sprintf(outmsg, "[%s]: << Power On Boot >>", FROM);
-                iot.pub_log(outmsg);
-        }
-        else if (strcmp(ACT, serialCMD[0]) == 0)
-        {
-                sprintf(outmsg, "[%s]: Window [%s]", "Status", INFO);
-                iot.pub_msg(outmsg);
-        }
-        else if (strcmp(ACT, serialCMD[5]) == 0)
-        {
-                sprintf(outmsg, "[%s]: [%s]; from[%s]", "Error", INFO, FROM);
-                iot.pub_msg(outmsg);
-        }
-        else if (strcmp(INFO, serialCMD[6]) == 0)
-        {
-                lastAliveping = millis();
-        }
-        else
-        {
-                sprintf(outmsg, "[%s]: [Unknown]; from[%s]", "Error", FROM);
-                iot.pub_msg(outmsg);
+                char testouput[100];
+                serializeJson(_doc, testouput);
+                iot.pub_msg(testouput);
         }
 }
 void readSerial()
@@ -155,6 +137,6 @@ void loop()
 {
         iot.looper();
         readSerial();
-        checkAlive();
-        // delay(50);
+        // checkAlive();
+        delay(50);
 }

@@ -4,10 +4,12 @@ bool readfile_ok = false;
 bool useAutoOff = false;
 bool doubleSW = false;
 bool err_protect = false;
+bool useAlive = false;
+
 uint8_t autoOff_time = 200;
 uint8_t del_loop = 50;
 uint8_t del_off = 100;
-uint8_t send_interval_minutes = 10;
+uint8_t Alive_int = 10;
 uint8_t btype_2 = 2;
 
 char *sketch_paramfile = "/sketch_param.json";
@@ -25,8 +27,8 @@ void update_vars(JsonDocument &DOC)
   del_loop = DOC["del_loop"];
   del_off = DOC["del_off"];
   btype_2 = DOC["btype_2"];
-  send_interval_minutes = DOC["send_interval_minutes"];
-
+  Alive_int = DOC["Alive_int"];
+  useAlive = DOC["useAlive"];
 }
 void startRead_parameters()
 {

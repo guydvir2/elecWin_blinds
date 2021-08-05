@@ -9,7 +9,7 @@
     "deviceTopic": "test",
     "groupTopic": "Windows",
     "prefixTopic": "myHome",
-    "debug_level": 0,
+    "debug_level": 2,
     "noNetwork_reset": 20,
     "ver":0.2
 }

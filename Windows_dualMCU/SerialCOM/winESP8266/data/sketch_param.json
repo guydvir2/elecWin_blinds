@@ -6,6 +6,7 @@
     "del_off": 50,
     "del_loop": 5,
     "btype_2": 2,
-    "send_interval_minutes": 10,
+    "Alive_int": 10,
+    "useAlive":false,
     "ver": 0.2
 }
