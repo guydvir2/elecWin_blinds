@@ -3,20 +3,21 @@
 #include <buttonPresses.h>
 #include <Arduino.h>
 
-#define VER "Arduino_v1.4"
+#define VER "Arduino_v1.41"
 #define MCU_TYPE "ProMini"
 #define DEV_NAME "MCU"
 #define RELAY_ON LOW
 #define SW_PRESSED LOW
 #define SW_DOWN_PIN 2   //4  /* Switch1 INPUT to Arduino */
 #define SW_UP_PIN 3     //5  /* Switch1 INPUT to Arduino */
-#define SW2_DOWN_PIN 4  /* Switch2 INPUT to Arduino */
-#define SW2_UP_PIN 5    /* Switch2 INPUT to Arduino */
-#define REL_DOWN_PIN 10 //3 /* OUTUPT to relay device */
-#define REL_UP_PIN 11   //2 /* OUTUPT to relay device */
+#define SW2_DOWN_PIN 4       /* Switch2 INPUT to Arduino */
+#define SW2_UP_PIN 5         /* Switch2 INPUT to Arduino */
+#define REL_DOWN_PIN 10 //3  /* OUTUPT to relay device */
+#define REL_UP_PIN 11   //2  /* OUTUPT to relay device */
 #define TIMEOUT_PARAM 15
 #define JSON_SERIAL_SIZE 450
-#define MILLIS_TO_MINUTES 60000
+#define MILLIS_TO_MINUTES 60000UL
+#define BOOT_DELAY 10000
 
 buttonPresses buttSwitch;
 buttonPresses *buttSwitchEXT[] = {nullptr, nullptr};
@@ -42,6 +43,7 @@ const char *msgKW[] = {"from", "type", "info", "info2"};
 const char *msgTypes[] = {"act", "info", "error"};
 const char *msgAct[] = {winStates[1], winStates[2], winStates[3], "reset_MCU", "Auto-Off"};
 const char *msgInfo[] = {"status", "query", "boot_p", "Boot", "error", "ping", "button", "MQTT"};
+const char *msgErrs[] = {"Comm", "Parameters", "Boot", "unKnown-error"};
 
 enum sys_states : const uint8_t
 {
@@ -53,7 +55,6 @@ enum sys_states : const uint8_t
 void (*resetFunc)(void) = 0;
 
 // ~~~~~~~~~  Serial Communication ~~~~~~~~
-
 void sendMSG(char *msgtype, char *addinfo, char *info2 = "0")
 {
   StaticJsonDocument<JSON_SERIAL_SIZE> doc;
@@ -64,18 +65,18 @@ void sendMSG(char *msgtype, char *addinfo, char *info2 = "0")
   doc[msgKW[3]] = info2;
   serializeJson(doc, Serial);
 }
-void sendAlive()
-{
-  if (useAlive)
-  {
-    static unsigned long lastTx = 0;
-    if (millis() - lastTx > Alive_int * MILLIS_TO_MINUTES)
-    {
-      lastTx = millis();
-      sendMSG(msgTypes[1], msgInfo[5]);
-    }
-  }
-}
+// void sendAlive()
+// {
+//   if (useAlive)
+//   {
+//     static unsigned long lastTx = 0;
+//     if (millis() - lastTx > Alive_int * MILLIS_TO_MINUTES)
+//     {
+//       lastTx = millis();
+//       sendMSG(msgTypes[1], msgInfo[5]);
+//     }
+//   }
+// }
 
 void Serial_CB(JsonDocument &_doc)
 {
@@ -130,11 +131,12 @@ void Serial_CB(JsonDocument &_doc)
     }
     else if (strcmp(INFO, msgInfo[1]) == 0) /* Query*/
     {
-      char t[200];
+      char t[250];
       char clk2[25];
       sprintf(clk2, "%02d-%02d-%02d %02d:%02d:%02d", year(bootTime), month(bootTime), day(bootTime), hour(bootTime), minute(bootTime), second(bootTime));
-      sprintf(t, "ver[%s], MCU[%s], DualSW[%s], ErrProtect[%s], bootTime[%s],Auto-Off[%s], Auto-Off_TO[%d],%d,%d",
-              VER, MCU_TYPE, DUAL_SW ? "YES" : "NO", ERR_PROTECT ? "YES" : "NO", clk2, USE_TO ? "YES" : "NO", TO_DURATION, del_off, del_loop);
+      sprintf(t, "ver[%s], MCU[%s], DualSW[%s], Parameters[%s], ErrProtect[%s], bootTime[%s],Auto-Off[%s], Auto-Off_TO[%d],%d,%d",
+              VER, MCU_TYPE, DUAL_SW ? "YES" : "NO", getP_OK ? "YES" : "NO", ERR_PROTECT ? "YES" : "NO", clk2, USE_TO ? "YES" : "NO",
+              TO_DURATION, del_off, del_loop);
       sendMSG(msgTypes[1], INFO, t);
     }
     else if (strcmp(INFO, msgInfo[2]) == 0) /* boot Parameters */
@@ -167,11 +169,11 @@ void readSerial()
     }
     else
     {
-      sendMSG(msgTypes[2], msgInfo[4]);
+      sendMSG(msgTypes[2], msgErrs[0]);
     }
   }
 }
-void getRemote_param(uint8_t _waitDuration = 15)
+void ask_remote_paramters(uint8_t _waitDuration = 15)
 {
   sendMSG(msgTypes[1], msgInfo[2]);                           /* calling for remote parameters */
   while (millis() < _waitDuration * 1000 && getP_OK == false) /* Wait to get parameters */
@@ -342,9 +344,9 @@ void autoOff_looper()
 }
 void reset_fail_load_parameters()
 {
-  if (getP_OK == false && millis() > MIN2RESET_BAD_P * 1000UL * 60)
+  if (getP_OK == false && millis() > MIN2RESET_BAD_P * MILLIS_TO_MINUTES)
   {
-    sendMSG(msgTypes[2], msgInfo[2]);
+    sendMSG(msgTypes[2], msgErrs[1]);
     delay(1000);
     resetFunc();
   }
@@ -381,17 +383,17 @@ void setup()
   start_gpio();
   start_buttSW();
   Serial.begin(9600);
-  delay(5000);
-  getRemote_param(TIMEOUT_PARAM);
+  delay(BOOT_DELAY);
+  ask_remote_paramters(TIMEOUT_PARAM);
   postBoot_err_notification();
 }
 void loop()
 {
   read_buttSwitch();
-  // errorProtection(); /* Avoid Simulatnious UP&DOWN */
+  errorProtection(); /* Avoid Simulatnious UP&DOWN */
   readSerial();
-  // autoOff_looper();
-  // reset_fail_load_parameters();
+  autoOff_looper();
+  reset_fail_load_parameters();
   // sendAlive();
   delay(del_loop);
 }
