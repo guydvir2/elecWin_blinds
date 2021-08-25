@@ -16,8 +16,6 @@ char *msgAct[] = {winStates[1], winStates[2], winStates[3], "reset_MCU", "Auto-O
 char *msgInfo[] = {"status", "query", "boot_p", "Boot", "error", "ping", "button", "MQTT"};
 char *msgErrs[] = {"Comm", "Parameters", "Boot", "unKnown-error"};
 
-unsigned long lastAliveping = 0;
-
 void sendMSG(char *msgtype, char *addinfo, char *info2)
 {
         StaticJsonDocument<JSON_SERIAL_SIZE> doc;
@@ -29,13 +27,10 @@ void sendMSG(char *msgtype, char *addinfo, char *info2)
 
         char testouput[200];
         serializeJson(doc, Serial); /* Sending MSG over serial to other MCU */
-        // serializeJson(doc, testouput);
-        // iot.pub_msg(testouput);
 }
 void send_boot_parameters()
 {
         uint8_t offset_HRS = 2;
-        unsigned long t = time(nullptr); //+ offset_HRS * 3600;
         StaticJsonDocument<JSON_SERIAL_SIZE> doc;
 
         doc[msgKW[0]] = DEV_NAME;
@@ -48,7 +43,7 @@ void send_boot_parameters()
 
         doc["t_out"] = useAutoOff;
         doc["t_out_d"] = autoOff_time;
-        doc["boot_t"] = t;
+        doc["boot_t"] = iot.now();
         doc["del_off"] = del_off;
         doc["del_loop"] = del_loop;
         doc["btype_2"] = btype_2;
@@ -71,14 +66,19 @@ void Serial_CB(JsonDocument &_doc)
                         sprintf(outmsg, "[%s]: Window switched [%s]", INFO2, INFO);
                         iot.pub_msg(outmsg);
                 }
-                else if (strcmp(INFO, msgInfo[2]) == 0) /* boot_p */
+                else if (strcmp(INFO, msgInfo[0]) == 0) /* status */
                 {
-                        send_boot_parameters();
+                        sprintf(outmsg, "[%s]: %s", INFO, INFO2);
+                        iot.pub_msg(outmsg);
                 }
                 else if (strcmp(INFO, msgInfo[1]) == 0) /* Query */
                 {
                         sprintf(outmsg, "[%s]: %s", INFO, INFO2);
                         iot.pub_msg(outmsg);
+                }
+                else if (strcmp(INFO, msgInfo[2]) == 0) /* boot_p */
+                {
+                        send_boot_parameters();
                 }
                 else if (strcmp(INFO, msgInfo[3]) == 0) /* Boot */
                 {
@@ -135,6 +135,5 @@ void loop()
 {
         iot.looper();
         readSerial();
-        // checkAlive();
         // delay(50);
 }
