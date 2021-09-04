@@ -1,18 +1,4 @@
-#include <myIOT2.h>
-
-myIOT2 iot;
-extern char *sketch_paramfile;
-extern void sendMSG(char *msgtype, char *addinfo, char *info2 = "0");
-extern bool useAutoOff;
-extern uint8_t autoOff_time;
-extern char *winStates[];
-extern char *msgKW[];
-extern char *msgTypes[];
-extern char *msgAct[];
-extern char *msgInfo[];
-
-extern StaticJsonDocument<JSON_SIZE_IOT> paramJSON;
-extern StaticJsonDocument<JSON_SIZE_SKETCH> sketchJSON;
+extern void sendMSG(const char *msgtype, const char *addinfo, const char *info2 = "0");
 
 void addiotnalMQTT(char *incoming_msg)
 {
@@ -24,15 +10,15 @@ void addiotnalMQTT(char *incoming_msg)
     }
     else if (strcmp(incoming_msg, "up") == 0)
     {
-        sendMSG(msgTypes[0], msgAct[0], msgInfo[7]);
+        sendMSG(msgTypes[0], msgAct[WIN_UP], msgInfo[6]);
     }
     else if (strcmp(incoming_msg, "down") == 0)
     {
-        sendMSG(msgTypes[0], msgAct[1], msgInfo[7]);
+        sendMSG(msgTypes[0], msgAct[WIN_DOWN], msgInfo[6]);
     }
     else if (strcmp(incoming_msg, "off") == 0)
     {
-        sendMSG(msgTypes[0], msgAct[2], msgInfo[7]);
+        sendMSG(msgTypes[0], msgAct[WIN_STOP], msgInfo[6]);
     }
     else if (strcmp(incoming_msg, "ver2") == 0)
     {
@@ -67,7 +53,7 @@ void addiotnalMQTT(char *incoming_msg)
     {
         sprintf(msg, "Reset: sent to MCU");
         iot.pub_msg(msg);
-        sendMSG(msgTypes[0], msgAct[3]);
+        sendMSG(msgTypes[0], msgAct[4]);
     }
 }
 void startIOTservices()

@@ -3,7 +3,13 @@
 #include <buttonPresses.h>
 #include <Arduino.h>
 
-#define VER "Arduino_v1.45"
+#define DEBUG_MODE true
+#if DEBUG_MODE
+#include <SoftwareSerial.h>
+SoftwareSerial mySerial(9, 8); // RX, TX
+#endif
+
+#define VER "Arduino_v1.5"
 #define MCU_TYPE "ProMini"
 #define DEV_NAME "MCU"
 #define RELAY_ON LOW
@@ -14,35 +20,29 @@
 #define SW2_UP_PIN 5    /* Switch2 INPUT to Arduino */
 #define REL_DOWN_PIN 10 //3  /* OUTUPT to relay device */
 #define REL_UP_PIN 11   //2  /* OUTUPT to relay device */
-#define TIMEOUT_PARAM 15
-#define JSON_SERIAL_SIZE 450
-#define MILLIS_TO_MINUTES 60000UL
-#define BOOT_DELAY 10000
+#define JSON_SERIAL_SIZE 200
 
 buttonPresses buttSwitch;
 buttonPresses *buttSwitchEXT[] = {nullptr, nullptr};
 
 // ~~~~ Services update via ESP on BOOT ~~~~~
-bool DUAL_SW = false;
-bool ERR_PROTECT = true;
-bool USE_TO = true;
-bool useAlive = false;
-uint8_t TO_DURATION = 60;
-uint8_t del_loop = 2;  // millis
-uint8_t del_off = 100; // millis
-uint8_t btype_2 = 2;   // Button Type
-uint8_t Alive_int = 10;
+bool DualSW = false;
+bool Err_Protect = true;
+bool AutoOff = true;
+
+uint8_t AutoOff_duration = 60;
+uint8_t btype_2 = 2; // Button Type
 time_t bootTime;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-bool getP_OK = false;               /* Flag, external parameters got OK ? */
-const uint8_t MIN2RESET_BAD_P = 30; /* Minutes to reset due to not getting Remote Parameters */
+bool getP_OK = false; /* Flag, external parameters got OK ? */
 unsigned long autoOff_clock = 0;
+const uint8_t MIN2RESET_BAD_P = 30; /* Minutes to reset due to not getting Remote Parameters */
 const char *winStates[] = {"Error", "up", "down", "off"};
-const char *msgKW[] = {"from", "type", "info", "info2"};
+const char *msgKW[] = {"from", "type", "i", "i_ext"};
 const char *msgTypes[] = {"act", "info", "error"};
-const char *msgAct[] = {winStates[1], winStates[2], winStates[3], "reset_MCU", "Auto-Off"};
-const char *msgInfo[] = {"status", "query", "boot_p", "Boot", "error", "ping", "button", "MQTT", "confirm"};
+const char *msgAct[] = {winStates[0], winStates[1], winStates[2], winStates[3], "reset_MCU", "Auto-Off"};
+const char *msgInfo[] = {"status", "query", "boot_p", "Boot", "error", "button", "MQTT","ping"};
 const char *msgErrs[] = {"Comm", "Parameters", "Boot", "unKnown-error"};
 
 enum sys_states : const uint8_t
@@ -54,8 +54,8 @@ enum sys_states : const uint8_t
 };
 void (*resetFunc)(void) = 0;
 
-// ~~~~~~~~~  Serial Communication ~~~~~~~~
-void _constMSG(JsonDocument &doc, const char *KW1, const char *KW2, const char *KW3)
+// ~~~~~~~~~ Serial Communication ~~~~~~~~
+void _constructMSG(JsonDocument &doc, const char *KW1, const char *KW2, const char *KW3)
 {
   doc[msgKW[0]] = DEV_NAME;
   doc[msgKW[1]] = KW1;
@@ -64,163 +64,140 @@ void _constMSG(JsonDocument &doc, const char *KW1, const char *KW2, const char *
 }
 void _sendMSG(JsonDocument &_doc)
 {
-  serializeJson(_doc, Serial);
+  serializeJson(_doc, mySerial);
 }
-void sendMSG(char *msgtype, char *ext1, char *ext2 = "0")
+void sendMSG(const char *msgtype, const char *ext1, const char *ext2 = "0")
 {
   StaticJsonDocument<JSON_SERIAL_SIZE> doc;
 
-  _constMSG(doc, msgtype, ext1, ext2);
+  _constructMSG(doc, msgtype, ext1, ext2);
   _sendMSG(doc);
+#if DEBUG_MODE
+  Serial.print("\nSent: ");
+  serializeJson(doc, Serial);
+#endif
+}
+void switch_cb(uint8_t value, char *src)
+{
+  if (_makeSwitch(value))
+  {
+    sendMSG(msgTypes[0], msgAct[value], src);
+  }
 }
 
-void _update_bootP(JsonDocument &_doc)
-{
-  ERR_PROTECT = _doc["err_p"];
-  DUAL_SW = _doc["dub_sw"];
-  USE_TO = _doc["t_out"];
-  TO_DURATION = _doc["t_out_d"];
-  bootTime = _doc["boot_t"];
-  del_loop = _doc["del_loop"];
-  del_off = _doc["del_off"];
-  btype_2 = _doc["btype_2"]; /* Button type for external input only. This part is not solved yet */
-  Alive_int = _doc["Alive_int"];
-  useAlive = _doc["useAlive"];
-}
 void _replyStatus()
 {
   uint8_t a = getWin_state();
-  switch (a)
+  if (a == 0)
   {
-  case WIN_UP:
-    sendMSG(msgTypes[1], msgInfo[0], msgAct[0]);
-    break;
-  case WIN_DOWN:
-    sendMSG(msgTypes[1], msgInfo[0], msgAct[1]);
-    break;
-  case WIN_STOP:
-    sendMSG(msgTypes[1], msgInfo[0], msgAct[2]);
-    break;
-
-  default:
     sendMSG(msgTypes[1], msgInfo[0], msgInfo[4]);
-    break;
   }
+  else
+  {
+    sendMSG(msgTypes[1], msgInfo[0], msgAct[a]);
+  }
+  // switch (a)
+  // {
+  // case WIN_UP:
+  //   sendMSG(msgTypes[1], msgInfo[0], msgAct[0]);
+  //   break;
+  // case WIN_DOWN:
+  //   sendMSG(msgTypes[1], msgInfo[0], msgAct[1]);
+  //   break;
+  // case WIN_STOP:
+  //   sendMSG(msgTypes[1], msgInfo[0], msgAct[2]);
+  //   break;
+
+  // default:
+  //   sendMSG(msgTypes[1], msgInfo[0], msgInfo[4]);
+  //   break;
+  // }
 }
 void _replyQuery()
 {
   char t[250];
   char clk2[25];
   sprintf(clk2, "%02d-%02d-%02d %02d:%02d:%02d", year(bootTime), month(bootTime), day(bootTime), hour(bootTime), minute(bootTime), second(bootTime));
-  sprintf(t, "ver[%s], MCU[%s], DualSW[%s], Parameters[%s], ErrProtect[%s], bootTime[%s],Auto-Off[%s], Auto-Off_TO[%d],%d,%d",
-          VER, MCU_TYPE, DUAL_SW ? "YES" : "NO", getP_OK ? "YES" : "NO", ERR_PROTECT ? "YES" : "NO", clk2, USE_TO ? "YES" : "NO",
-          TO_DURATION, del_off, del_loop);
-  sendMSG(msgTypes[1], msgKW[2], t);
+  sprintf(t, "ver[%s], MCU[%s], DualSW[%s], got_BootP[%s], eProtect[%s], boot[%s],A_off[%s], A_Off_TO[%d]",
+          VER, MCU_TYPE, DualSW ? "YES" : "NO", getP_OK ? "YES" : "NO", Err_Protect ? "YES" : "NO", clk2, AutoOff ? "YES" : "NO", AutoOff_duration);
+  sendMSG(msgTypes[1], msgInfo[1], t);
 }
 void _Actions_cb(const char *KW2)
 {
-  if (strcmp(KW2, msgAct[0]) == 0)       /* Window UP */
+  if (strcmp(KW2, msgAct[WIN_UP]) == 0) /* Window UP */
   {
-    makeSwitch(WIN_UP);
+    switch_cb(WIN_UP, msgInfo[6]);
   }
-  else if (strcmp(KW2, msgAct[1]) == 0)  /* Window DOWN */
+  else if (strcmp(KW2, msgAct[WIN_DOWN]) == 0) /* Window DOWN */
   {
-    makeSwitch(WIN_DOWN);
+    switch_cb(WIN_DOWN, msgInfo[6]);
   }
-  else if (strcmp(KW2, msgAct[2]) == 0)  /* Window OFF */
+  else if (strcmp(KW2, msgAct[WIN_STOP]) == 0) /* Window OFF */
   {
-    makeSwitch(WIN_STOP);
+    switch_cb(WIN_STOP, msgInfo[6]);
   }
-  else if (strcmp(KW2, msgAct[3]) == 0)  /* init Reset */
+  else if (strcmp(KW2, msgAct[4]) == 0) /* init Reset */
   {
     resetFunc();
   }
-  sendMSG(msgTypes[1], KW2, msgInfo[8]); /* Notify Action was done */
 }
-void _Infos_cb(const char *KW2, JsonDocument &_doc)
+void _Infos_cb(JsonDocument &_doc)
 {
-  if (strcmp(KW2, msgInfo[0]) == 0)      /* Status */
+  // const char *KW2 = _doc[msgKW[2]];
+  if (strcmp(_doc[msgKW[2]], msgInfo[0]) == 0) /* Status */
   {
     _replyStatus();
   }
-  else if (strcmp(KW2, msgInfo[1]) == 0) /* Query*/
+  else if (strcmp(_doc[msgKW[2]], msgInfo[1]) == 0) /* Query*/
   {
     _replyQuery();
   }
-  else if (strcmp(KW2, msgInfo[2]) == 0) /* boot Parameters */
+  else if (strcmp(_doc[msgKW[2]], msgInfo[2]) == 0) /* boot Parameters */
   {
     _update_bootP(_doc);
+    getP_OK = true;
+  }
+  else if (strcmp(_doc[msgKW[2]], msgInfo[7]) == 0) /* Ping back */
+  {
+    sendMSG(msgTypes[1],msgInfo[7]);
   }
 }
-void Serial_CB(JsonDocument &_doc)
+
+void _update_bootP(JsonDocument &_doc)
 {
-  const char *FROM = _doc[msgKW[0]];
-  const char *TYPE = _doc[msgKW[1]];
-  const char *KW2 = _doc[msgKW[2]];
-  const char *KW3 = _doc[msgKW[3]];
-
-  if (strcmp(TYPE, msgTypes[0]) == 0) /* Got Actions */
-  {
-    _Actions_cb(KW2);
-  }
-  else if (strcmp(TYPE, msgTypes[1]) == 0) /* info */
-  {
-    _Infos_cb(KW2, _doc);
-  }
+  Err_Protect = _doc["err_p"];
+  DualSW = _doc["dub_sw"];
+  AutoOff = _doc["t_out"];
+  AutoOff_duration = _doc["t_out_d"];
+  bootTime = _doc["boot_t"].as<time_t>();
+  btype_2 = _doc["btype_2"]; /* Button type for external input only. This part is not solved yet */
 }
-void readSerial()
+void _ask_bootP()
 {
-  if (Serial.available() > 0)
-  {
-    StaticJsonDocument<JSON_SERIAL_SIZE> doc;
-    DeserializationError error = deserializeJson(doc, Serial);
-
-    if (!error)
-    {
-      Serial_CB(doc); /* send message to Callback */
-    }
-    else
-    {
-      sendMSG(msgTypes[2], msgErrs[0]); /* Communication Error */
-    }
-  }
+  sendMSG(msgTypes[1], msgInfo[2]); /* calling for remote parameters */
 }
-
 void request_remoteParameters(uint8_t _waitDuration = 15)
 {
-  sendMSG(msgTypes[1], msgInfo[2]);                           /* calling for remote parameters */
+  long last_req = millis();
+  _ask_bootP();
   while (millis() < _waitDuration * 1000 && getP_OK == false) /* Wait to get parameters */
   {
-    if (Serial.available() > 0)
+    if (millis() - last_req > 2000) /* ask again */
     {
-      StaticJsonDocument<JSON_SERIAL_SIZE> doc;
-      DeserializationError error = deserializeJson(doc, Serial);
-      if (!error)
-      {
-        const char *TYPE = doc[msgKW[1]];
-        const char *KW2 = doc[msgKW[2]];
-
-        if (strcmp(TYPE, msgTypes[1]) == 0) /* verify boot_parameters */
-        {
-          Serial_CB(doc);
-          getP_OK = true;
-        }
-      }
+      last_req = millis();
+      _ask_bootP();
     }
-    else
-    {
-      static uint8_t loopCounter = 0; /* This part is needed when ESP has not completed boot process */
-      if (loopCounter > 5)
-      {
-        delay(1000);
-        sendMSG(msgTypes[1], msgInfo[2]); /* Send request again */
-      }
-      else
-      {
-        loopCounter++;
-      }
-    }
+    readSerial();
     delay(50);
+  }
+}
+void reset_fail_load_parameters()
+{
+  if (getP_OK == false && millis() > MIN2RESET_BAD_P * 60000UL)
+  {
+    sendMSG(msgTypes[2], msgErrs[1]);
+    delay(1000);
+    resetFunc();
   }
 }
 void postBoot_err_notification()
@@ -236,18 +213,61 @@ void postBoot_err_notification()
   }
 }
 
+void Serial_CB(JsonDocument &_doc)
+{
+  // const char *FROM = _doc[msgKW[0]];
+  // const char *TYPE = _doc[msgKW[1]];
+  // const char *KW2 = _doc[msgKW[2]];
+  // const char *KW3 = _doc[msgKW[3]];
+
+  if (strcmp(_doc[msgKW[1]], msgTypes[0]) == 0) /* Got Actions */
+  {
+    _Actions_cb(_doc[msgKW[2]]);
+  }
+  else if (strcmp(_doc[msgKW[1]], msgTypes[1]) == 0) /* info */
+  {
+    _Infos_cb(_doc);
+  }
+}
+void readSerial()
+{
+  if (mySerial.available() > 0)
+  {
+    StaticJsonDocument<JSON_SERIAL_SIZE> doc;
+    DeserializationError error = deserializeJson(doc, mySerial);
+
+    if (!error)
+    {
+#if DEBUG_MODE
+      Serial.print("\nGot msg: ");
+      serializeJson(doc, Serial);
+      Serial.flush();
+#endif
+      Serial_CB(doc); /* send message to Callback */
+    }
+    else
+    {
+      while (mySerial.available() > 0) /* Clear Buffer in case of error */
+      {
+        mySerial.read();
+      }
+      sendMSG(msgTypes[2], msgErrs[0]); /* Communication Error */
+    }
+  }
+}
+
 // ~~~~~~ Handling Inputs & Outputs ~~~~~~~
-void allOff()
+void allRelays_Off()
 {
   digitalWrite(REL_UP_PIN, !RELAY_ON);
   digitalWrite(REL_DOWN_PIN, !RELAY_ON);
-  delay(del_off);
+  delay(20);
 }
-void start_gpio()
+void start_output_gpios()
 {
   pinMode(REL_UP_PIN, OUTPUT);
   pinMode(REL_DOWN_PIN, OUTPUT);
-  allOff();
+  allRelays_Off();
 }
 void start_buttSW()
 {
@@ -256,7 +276,7 @@ void start_buttSW()
   buttSwitch.buttonType = 2;
   buttSwitch.start();
 
-  if (DUAL_SW)
+  if (DualSW)
   {
     static buttonPresses buttSwitchExt;
     buttSwitchEXT[0] = &buttSwitchExt;
@@ -264,15 +284,6 @@ void start_buttSW()
     buttSwitchEXT[0]->pin1 = SW2_DOWN_PIN;
     buttSwitchEXT[0]->buttonType = btype_2;
     buttSwitchEXT[0]->start();
-  }
-}
-void read_buttSwitch()
-{
-  uint8_t switchRead = buttSwitch.getValue();
-  if (switchRead != 0)
-  {
-    /*  0: no request; 1: request up; 2: request down; 3: request off */
-    switch_cb(switchRead);
   }
 }
 
@@ -283,26 +294,47 @@ uint8_t getWin_state()
 
   if (relup == !RELAY_ON && reldown == !RELAY_ON)
   {
-    return WIN_STOP;
+    return WIN_STOP; // value 3
   }
   else if (relup == RELAY_ON && reldown == !RELAY_ON)
   {
-    return WIN_UP;
+    return WIN_UP; // value 1
   }
   else if (relup == !RELAY_ON && reldown == RELAY_ON)
   {
-    return WIN_DOWN;
+    return WIN_DOWN; // value 2
   }
   else
   {
-    return WIN_ERR;
+    return WIN_ERR; // value 0
   }
 }
-bool makeSwitch(uint8_t state)
+void read_buttSwitch()
+{
+  uint8_t switchRead = buttSwitch.getValue(); /*  0: no change; 1: up; 2: down; 3: off */
+  if (switchRead != 0)
+  {
+    switch_cb(switchRead, msgInfo[6]);
+  }
+}
+
+void autoOff_looper()
+{
+  if (AutoOff && autoOff_clock != 0)
+  {
+    if (millis() > autoOff_clock + AutoOff_duration * 1000UL)
+    {
+      switch_cb(WIN_STOP, msgAct[5]);
+      // _makeSwitch(WIN_STOP);
+      // sendMSG(msgTypes[0], winStates[3], msgAct[4]);
+    }
+  }
+}
+bool _makeSwitch(uint8_t state)
 {
   if (getWin_state() != state) /* Not already in that state */
   {
-    allOff();
+    allRelays_Off();
     switch (state)
     {
     case WIN_STOP:
@@ -317,7 +349,7 @@ bool makeSwitch(uint8_t state)
       break;
     }
 
-    if (USE_TO)
+    if (AutoOff)
     {
       if (state != WIN_STOP)
       {
@@ -335,42 +367,15 @@ bool makeSwitch(uint8_t state)
     return 0;
   }
 }
-void switch_cb(uint8_t value)
-{
-  if (makeSwitch(value))
-  {
-    sendMSG(msgTypes[0], msgAct[value - 1], msgInfo[6]);
-  }
-}
-
-void autoOff_looper()
-{
-  if (USE_TO && autoOff_clock != 0)
-  {
-    if (millis() > autoOff_clock + TO_DURATION * 1000UL)
-    {
-      makeSwitch(WIN_STOP);
-      sendMSG(msgTypes[0], winStates[3], msgAct[4]);
-    }
-  }
-}
-void reset_fail_load_parameters()
-{
-  if (getP_OK == false && millis() > MIN2RESET_BAD_P * MILLIS_TO_MINUTES)
-  {
-    sendMSG(msgTypes[2], msgErrs[1]);
-    delay(1000);
-    resetFunc();
-  }
-}
 void errorProtection()
 {
-  if (ERR_PROTECT)
+  if (Err_Protect)
   {
     if (digitalRead(REL_UP_PIN) == RELAY_ON && digitalRead(REL_DOWN_PIN) == RELAY_ON)
     {
-      makeSwitch(WIN_STOP);
-      sendMSG(msgTypes[2], "Relays");
+      // _makeSwitch(WIN_STOP);
+      // sendMSG(msgTypes[2], "Relays");
+      switch_cb(WIN_STOP, msgInfo[4]);
     }
     if (digitalRead(SW_UP_PIN) == SW_PRESSED && digitalRead(SW_DOWN_PIN) == SW_PRESSED)
     {
@@ -378,7 +383,7 @@ void errorProtection()
       delay(100);
       resetFunc();
     }
-    if (DUAL_SW)
+    if (DualSW)
     {
       if (digitalRead(SW2_UP_PIN) == SW_PRESSED && digitalRead(SW2_DOWN_PIN) == SW_PRESSED)
       {
@@ -392,12 +397,12 @@ void errorProtection()
 
 void setup()
 {
-  start_gpio();
+  start_output_gpios();
   start_buttSW();
+  mySerial.begin(9600);
   Serial.begin(9600);
-  Serial.flush();
-  delay(BOOT_DELAY);
-  request_remoteParameters(TIMEOUT_PARAM);
+  Serial.println("\nBoot");
+  request_remoteParameters();
   postBoot_err_notification();
 }
 void loop()
@@ -407,5 +412,4 @@ void loop()
   readSerial();
   autoOff_looper();
   reset_fail_load_parameters();
-  delay(del_loop);
 }

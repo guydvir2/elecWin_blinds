@@ -2,11 +2,7 @@
     "useAutoOff": true,
     "autoOff_time": 45,
     "doubleSW": false,
-    "err_protect": false,
-    "del_off": 50,
-    "del_loop": 5,
+    "err_protect": true,
     "btype_2": 2,
-    "Alive_int": 10,
-    "useAlive":false,
-    "ver": 0.2
+    "ver": 0.3
 }
