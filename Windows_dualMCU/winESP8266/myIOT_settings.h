@@ -55,6 +55,12 @@ void addiotnalMQTT(char *incoming_msg)
         iot.pub_msg(msg);
         sendMSG(msgTypes[0], msgAct[4]);
     }
+    else if (strcmp(incoming_msg, "ping_MCU") == 0)
+    {
+        sprintf(msg, "[Ping]: sent to MCU");
+        iot.pub_msg(msg);
+        sendMSG(msgTypes[0], msgAct[4]);
+    }
 }
 void startIOTservices()
 {

@@ -26,6 +26,7 @@ const char *msgErrs[] = {"Comm", "Parameters", "Boot", "unKnown-error"};
 #include "myIOT_settings.h"
 
 bool pingOK = false;
+unsigned long last_success_ping_clock = 0;
 
 void ping_looper(uint8_t loop_period = 10)
 {
@@ -33,7 +34,7 @@ void ping_looper(uint8_t loop_period = 10)
         static bool err_notification = false;
         const uint8_t extra_time_to_err = 1;
 
-        if (pingOK == false && err_notification == false && (last_ping_clock > 0 && millis() - last_ping_clock > 1000)) /* Notify reach failure*/
+        if (pingOK == false && err_notification == false && (last_ping_clock != 0 && millis() - last_ping_clock > 1000)) /* Notify reach failure*/
         {
                 err_notification = true;
                 iot.pub_log("[Ping]: [Fail] reaching MCU");
@@ -41,10 +42,9 @@ void ping_looper(uint8_t loop_period = 10)
         else if (pingOK && err_notification) /* Notify restore Ping*/
         {
                 err_notification = false;
-                iot.pub_log("[Ping]: [OK] reaching MCU");
         }
 
-        if (millis() - last_ping_clock > loop_period * 60000UL + 1000 * extra_time_to_err && pingOK) /* Change state to fail */
+        if (millis() - last_success_ping_clock > loop_period * 60000UL + 1000 * extra_time_to_err && pingOK) /* Change state to fail */
         {
                 pingOK = false;
         }
@@ -114,6 +114,7 @@ void Serial_CB(JsonDocument &_doc)
                 }
                 else if (strcmp(INFO, msgInfo[7]) == 0) /* Ping */
                 {
+                        last_success_ping_clock=millis();
                         pingOK = true;
                 }
         }
@@ -162,5 +163,5 @@ void loop()
 {
         iot.looper();
         readSerial();
-        ping_looper(1);
+        ping_looper(5);
 }
