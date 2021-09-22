@@ -3,7 +3,7 @@
 #define JSON_SIZE_IOT 400
 #define JSON_SIZE_SKETCH 300
 #define JSON_SERIAL_SIZE 250
-#define VER "ESP8266_V1.1"
+#define VER "ESP8266_V1.2b"
 
 myIOT2 iot;
 
@@ -86,13 +86,13 @@ void send_boot_parameters()
 }
 void Serial_CB(JsonDocument &_doc)
 {
-        char outmsg[100];
+        char outmsg[150];
         const char *FROM = _doc[msgKW[0]];
         const char *TYPE = _doc[msgKW[1]];
         const char *INFO = _doc[msgKW[2]];
         const char *INFO2 = _doc[msgKW[3]];
 
-        if (strcmp(TYPE, msgTypes[1]) == 0) /* Getting Info */
+        if (strcmp(TYPE, msgTypes[1]) == 0)      /* Getting Info */
         {
                 if (strcmp(INFO, msgInfo[0]) == 0) /* status */
                 {
