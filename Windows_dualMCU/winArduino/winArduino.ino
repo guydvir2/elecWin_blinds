@@ -1,7 +1,7 @@
 #include <ArduinoJson.h>
-#include <TimeLib.h>
 #include <buttonPresses.h>
 #include <Arduino.h>
+#include <time.h>
 
 // #define DEBUG_MODE true
 // #if DEBUG_MODE
@@ -9,7 +9,7 @@
 // SoftwareSerial mySerial(9, 8); // RX, TX
 // #endif
 
-#define VER "Arduino_v1.5"
+#define VER "Arduino_v1.6_beta"
 #define MCU_TYPE "ProMini"
 #define DEV_NAME "MCU"
 #define RELAY_ON LOW
@@ -26,22 +26,24 @@ buttonPresses buttSwitch;
 buttonPresses *buttSwitchEXT[] = {nullptr, nullptr};
 
 // ~~~~ Services update via ESP on BOOT ~~~~~
-bool DualSW = false;
-bool Err_Protect = true;
-bool AutoOff = true;
+bool DualSW = false;     /* 2 Switches Window*/
+bool Err_Protect = true; /* Monitor UP&DOWN pressed together*/
+bool AutoOff = true;     /* Timeout to switch off Relays */
+bool Lockdown = false;   /* lock operations of relays, both MQTT and Switch */
 
 uint8_t AutoOff_duration = 60;
 uint8_t btype_2 = 2; // Button Type
 time_t bootTime;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-bool getP_OK = false; /* Flag, external parameters got OK ? */
+bool lockdown_state = false; /* Flag, lockdown command */
+bool getP_OK = false;        /* Flag, external parameters got OK ? */
 unsigned long autoOff_clock = 0;
 const uint8_t MIN2RESET_BAD_P = 30; /* Minutes to reset due to not getting Remote Parameters */
 const char *winStates[] = {"Error", "up", "down", "off"};
 const char *msgKW[] = {"from", "type", "i", "i_ext"};
 const char *msgTypes[] = {"act", "info", "error"};
-const char *msgAct[] = {winStates[0], winStates[1], winStates[2], winStates[3], "reset_MCU", "Auto-Off"};
+const char *msgAct[] = {winStates[0], winStates[1], winStates[2], winStates[3], "reset_MCU", "Auto-Off", "lockdown_on", "lockdown_off"};
 const char *msgInfo[] = {"status", "query", "boot_p", "Boot", "error", "button", "MQTT", "ping"};
 const char *msgErrs[] = {"Comm", "Parameters", "Boot", "unKnown-error"};
 
@@ -72,16 +74,26 @@ void sendMSG(const char *msgtype, const char *ext1, const char *ext2 = "0")
 
   _constructMSG(doc, msgtype, ext1, ext2);
   _sendMSG(doc);
-// #if DEBUG_MODE
-//   Serial.print("\nSent: ");
-//   serializeJson(doc, Serial);
-// #endif
+  // #if DEBUG_MODE
+  //   Serial.print("\nSent: ");
+  //   serializeJson(doc, Serial);
+  // #endif
 }
 void switch_cb(uint8_t value, char *src)
 {
-  if (_makeSwitch(value))
+  if (!checkLockdown())
   {
-    sendMSG(msgTypes[0], msgAct[value], src);
+    if (_makeSwitch(value))
+    {
+      sendMSG(msgTypes[0], msgAct[value], src);
+    }
+  }
+  else /* in LOCKDOWN mode */ 
+  {
+    if (_makeSwitch(WIN_STOP)) /* Allow AutoOff*/
+    {
+      sendMSG(msgTypes[0], msgAct[WIN_STOP], src);
+    }
   }
 }
 
@@ -101,9 +113,17 @@ void _replyQuery()
 {
   char t[250];
   char clk2[25];
-  sprintf(clk2, "%02d-%02d-%02d %02d:%02d:%02d", year(bootTime), month(bootTime), day(bootTime), hour(bootTime), minute(bootTime), second(bootTime));
-  sprintf(t, "ver[%s], MCU[%s], DualSW[%s], got_BootP[%s], eProtect[%s], boot[%s],A_off[%s], A_Off_TO[%d]",
-          VER, MCU_TYPE, DualSW ? "YES" : "NO", getP_OK ? "YES" : "NO", Err_Protect ? "YES" : "NO", clk2, AutoOff ? "YES" : "NO", AutoOff_duration);
+  uint8_t day_light = 3;
+  struct tm *tm = localtime(&bootTime);
+  if (tm->tm_mon >= 10 && tm->tm_mon < 4)
+  {
+    day_light = 2;
+  }
+
+  sprintf(clk2, "%04d-%02d-%02d %02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour + day_light, tm->tm_min, tm->tm_sec);
+
+  sprintf(t, "ver[%s], MCU[%s], DualSW[%s], BootP[%s], eProtect[%s], boot[%s],Auto_off[%s %dsec], Lockdown[%d]",
+          VER, MCU_TYPE, DualSW ? "YES" : "NO", getP_OK ? "OK" : "FAIL", Err_Protect ? "YES" : "NO", clk2, AutoOff ? "YES" : "NO", AutoOff_duration,Lockdown);
   sendMSG(msgTypes[1], msgInfo[1], t);
 }
 void _Actions_cb(const char *KW2)
@@ -123,6 +143,14 @@ void _Actions_cb(const char *KW2)
   else if (strcmp(KW2, msgAct[4]) == 0) /* init Reset */
   {
     resetFunc();
+  }
+  else if (strcmp(KW2, msgAct[6]) == 0) /* lockdown ON */
+  {
+    update_lockdown_state(true);
+  }
+  else if (strcmp(KW2, msgAct[7]) == 0) /* lockdown OFF */
+  {
+    update_lockdown_state(false);
   }
 }
 void _Infos_cb(JsonDocument &_doc)
@@ -152,6 +180,7 @@ void _update_bootP(JsonDocument &_doc)
   AutoOff = _doc["t_out"];
   AutoOff_duration = _doc["t_out_d"];
   bootTime = _doc["boot_t"].as<time_t>();
+  Lockdown = _doc["Lockdown"];
   btype_2 = _doc["btype_2"]; /* Button type for external input only. This part is not solved yet */
 
   getP_OK = true;
@@ -187,7 +216,9 @@ void reset_fail_load_parameters()
 void postBoot_err_notification()
 {
   sendMSG(msgTypes[1], msgInfo[3]);
-  if (year(bootTime) == 1970)
+  struct tm *tm = localtime(&bootTime);
+
+  if (tm->tm_year == 70)
   {
     sendMSG(msgTypes[2], msgInfo[3], "NTP");
   }
@@ -217,11 +248,11 @@ void readSerial()
 
     if (!error)
     {
-// #if DEBUG_MODE
-//       Serial.print("\nGot msg: ");
-//       serializeJson(doc, Serial);
-//       Serial.flush();
-// #endif
+      // #if DEBUG_MODE
+      //       Serial.print("\nGot msg: ");
+      //       serializeJson(doc, Serial);
+      //       Serial.flush();
+      // #endif
       Serial_CB(doc); /* send message to Callback */
     }
     else
@@ -367,6 +398,31 @@ void errorProtection()
         resetFunc();
       }
     }
+  }
+}
+
+void update_lockdown_state(bool _state)
+{
+  if (_state)
+  {
+    switch_cb(WIN_DOWN, msgAct[6]);
+    sendMSG(msgTypes[1], msgAct[6]);
+  }
+  else
+  {
+    sendMSG(msgTypes[1], msgAct[7]);
+  }
+  lockdown_state = _state;
+}
+bool checkLockdown()
+{
+  if (Lockdown)
+  {
+    return lockdown_state;
+  }
+  else
+  {
+    return 0;
   }
 }
 

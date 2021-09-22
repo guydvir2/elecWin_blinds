@@ -2,6 +2,7 @@ bool readfile_ok = false;
 bool useAutoOff = false;
 bool doubleSW = false;
 bool err_protect = false;
+bool Lockdown = false;
 uint8_t autoOff_time = 200;
 uint8_t btype_2 = 2;
 
@@ -18,10 +19,11 @@ void update_vars(JsonDocument &DOC)
   err_protect = DOC["err_protect"];
   doubleSW = DOC["doubleSW"];
   btype_2 = DOC["btype_2"];
+  Lockdown = DOC["Lockdown"];
 }
 void startRead_parameters()
 {
-  String sketch_defs = "{\"useAutoOff\":false,\"autoOff_time\":60,\"doubleSW\":false,\"err_protect\":false,\"btype_2\":2}";
+  String sketch_defs = "{\"useAutoOff\":false,\"autoOff_time\":60,\"doubleSW\":false,\"err_protect\":false,\"btype_2\":2, \"Lockdown\":false}";
 
   String myIOT_defs = "{\"useSerial\":true,\"useWDT\":false,\"useOTA\":true,\"useResetKeeper\" : false,\"useBootClockLog\" : false,\
                         \"useDebugLog\" : true,\"useNetworkReset\":false, \"deviceTopic\" : \"myWindow\",\

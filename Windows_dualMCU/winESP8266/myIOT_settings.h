@@ -1,4 +1,6 @@
 extern void sendMSG(const char *msgtype, const char *addinfo, const char *info2 = "0");
+char *ext_topic = "myHome/Windows/lockdown";
+#define EXT_TOPIC_EN true
 
 void addiotnalMQTT(char *incoming_msg)
 {
@@ -22,7 +24,7 @@ void addiotnalMQTT(char *incoming_msg)
     }
     else if (strcmp(incoming_msg, "ver2") == 0)
     {
-        sprintf(msg, "ver2:[%s], [DualMCU], [Serial-Comm], AutoOff[%d], AutoOff_time[%d]", VER, useAutoOff, autoOff_time);
+        sprintf(msg, "ver2:[%s], [DualMCU], [Serial-Comm], AutoOff[%d], AutoOff_time[%d],Lockdown[%d]", VER, useAutoOff, autoOff_time, Lockdown);
         iot.pub_msg(msg);
     }
     else if (strcmp(incoming_msg, "show_flash_param") == 0)
@@ -71,8 +73,42 @@ void startIOTservices()
     iot.useDebug = paramJSON["useDebugLog"];
     iot.debug_level = paramJSON["debug_level"];
     iot.useBootClockLog = paramJSON["useBootClockLog"];
+    iot.useextTopic = EXT_TOPIC_EN;
+    iot.extTopic[0] = ext_topic;
     strcpy(iot.deviceTopic, paramJSON["deviceTopic"]);
     strcpy(iot.prefixTopic, paramJSON["prefixTopic"]);
     strcpy(iot.addGroupTopic, paramJSON["groupTopic"]);
+
     iot.start_services(addiotnalMQTT);
+}
+void lockdown_looper()
+{
+    if (iot.extTopic_newmsg_flag)
+    {
+        if (strcmp(iot.extTopic_msg.from_topic, ext_topic) == 0)
+        {
+            if (strcmp(iot.extTopic_msg.msg, "1") == 0)
+            {
+                if (Lockdown)
+                {
+                    iot.pub_msg("[Lockdown]: Enabled");
+                    sendMSG(msgTypes[0], msgAct[6]);
+                }
+                else
+                {
+                    iot.pub_msg("[Lockdown]: igonred");
+                }
+            }
+            else if (strcmp(iot.extTopic_msg.msg, "0") == 0)
+            {
+                if (Lockdown)
+                {
+                    iot.pub_msg("[Lockdown]: Disabled");
+                    iot.pub_noTopic("", ext_topic, true); /* make sure no retained msg is is topic */
+                    sendMSG(msgTypes[0], msgAct[7]);
+                }
+            }
+            iot.clear_ExtTopicbuff();
+        }
+    }
 }

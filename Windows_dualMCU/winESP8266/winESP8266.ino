@@ -18,7 +18,7 @@ enum sys_states : const uint8_t
 const char *winStates[] = {"Error", "up", "down", "off"};
 const char *msgKW[] = {"from", "type", "i", "i_ext"};
 const char *msgTypes[] = {"act", "info", "error"};
-const char *msgAct[] = {winStates[0], winStates[1], winStates[2], winStates[3], "reset_MCU", "Auto-Off"};
+const char *msgAct[] = {winStates[0], winStates[1], winStates[2], winStates[3], "reset_MCU", "Auto-Off", "lockdown_on", "lockdown_off"};
 const char *msgInfo[] = {"status", "query", "boot_p", "Boot", "error", "button", "MQTT", "ping"};
 const char *msgErrs[] = {"Comm", "Parameters", "Boot", "unKnown-error"};
 
@@ -80,6 +80,7 @@ void send_boot_parameters()
         doc["t_out_d"] = autoOff_time;
         doc["boot_t"] = (long)iot.now();
         doc["btype_2"] = btype_2;
+        doc["Lockdown"] = Lockdown;
 
         serializeJson(doc, Serial);
 }
@@ -114,8 +115,18 @@ void Serial_CB(JsonDocument &_doc)
                 }
                 else if (strcmp(INFO, msgInfo[7]) == 0) /* Ping */
                 {
-                        last_success_ping_clock=millis();
+                        last_success_ping_clock = millis();
                         pingOK = true;
+                }
+                else if (strcmp(INFO, msgAct[6]) == 0 && Lockdown) /* LOCKDONW_ON */
+                {
+                        sprintf(outmsg, "Locdown: [%s] is locked", FROM);
+                        iot.pub_log(outmsg);
+                }
+                else if (strcmp(INFO, msgAct[7]) == 0 && Lockdown) /* LOCKDONW_OFF */
+                {
+                        sprintf(outmsg, "Locdown: [%s] is released", FROM);
+                        iot.pub_log(outmsg);
                 }
         }
         else if (strcmp(TYPE, msgTypes[0]) == 0) /*  Actions */
@@ -162,6 +173,7 @@ void setup()
 void loop()
 {
         iot.looper();
+        lockdown_looper();
         readSerial();
-        ping_looper(5);
+        ping_looper(30);
 }

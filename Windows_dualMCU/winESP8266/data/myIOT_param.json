@@ -6,7 +6,7 @@
     "useResetKeeper": false,
     "useNetworkReset": true,
     "useBootClockLog": false,
-    "deviceTopic": "saloonSingle",
+    "deviceTopic": "parentsRoom",
     "groupTopic": "Windows",
     "prefixTopic": "myHome",
     "debug_level": 2,
