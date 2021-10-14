@@ -3,13 +3,13 @@
 #include <Arduino.h>
 #include <time.h>
 
-// #define DEBUG_MODE true
-// #if DEBUG_MODE
-// #include <SoftwareSerial.h>
-// SoftwareSerial mySerial(9, 8); // RX, TX
-// #endif
+#define DEBUG_MODE false
+#if DEBUG_MODE
+#include <SoftwareSerial.h>
+SoftwareSerial mySerial(9, 8); // RX, TX
+#endif
 
-#define VER "Arduino_v1.6_beta"
+#define VER "Arduino_v1.61_beta"
 #define MCU_TYPE "ProMini"
 #define DEV_NAME "MCU"
 #define RELAY_ON LOW
@@ -23,7 +23,7 @@
 #define JSON_SERIAL_SIZE 200
 
 buttonPresses buttSwitch;
-buttonPresses *buttSwitchEXT[] = {nullptr, nullptr};
+buttonPresses *buttSwitchEXT[] = {nullptr};
 
 // ~~~~ Services update via ESP on BOOT ~~~~~
 bool DualSW = false;     /* 2 Switches Window*/
@@ -36,15 +36,16 @@ uint8_t btype_2 = 2; // Button Type
 time_t bootTime;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+bool getP_OK = false; /* Flag, external parameters got OK ? */
 bool lockdown_state = false; /* Flag, lockdown command */
-bool getP_OK = false;        /* Flag, external parameters got OK ? */
 unsigned long autoOff_clock = 0;
 const uint8_t MIN2RESET_BAD_P = 30; /* Minutes to reset due to not getting Remote Parameters */
+
 const char *winStates[] = {"Error", "up", "down", "off"};
 const char *msgKW[] = {"from", "type", "i", "i_ext"};
 const char *msgTypes[] = {"act", "info", "error"};
 const char *msgAct[] = {winStates[0], winStates[1], winStates[2], winStates[3], "reset_MCU", "Auto-Off", "lockdown_on", "lockdown_off"};
-const char *msgInfo[] = {"status", "query", "boot_p", "Boot", "error", "button", "MQTT", "ping"};
+const char *msgInfo[] = {"status", "query", "boot_p", "Boot", "error", "button", "MQTT", "ping", "Ext_button"};
 const char *msgErrs[] = {"Comm", "Parameters", "Boot", "unKnown-error"};
 
 enum sys_states : const uint8_t
@@ -64,20 +65,16 @@ void _constructMSG(JsonDocument &doc, const char *KW1, const char *KW2, const ch
   doc[msgKW[2]] = KW2;
   doc[msgKW[3]] = KW3;
 }
-void _sendMSG(JsonDocument &_doc)
-{
-  serializeJson(_doc, Serial);
-}
 void sendMSG(const char *msgtype, const char *ext1, const char *ext2 = "0")
 {
   StaticJsonDocument<JSON_SERIAL_SIZE> doc;
 
   _constructMSG(doc, msgtype, ext1, ext2);
-  _sendMSG(doc);
-  // #if DEBUG_MODE
-  //   Serial.print("\nSent: ");
-  //   serializeJson(doc, Serial);
-  // #endif
+  serializeJson(doc, Serial);
+  #if DEBUG_MODE
+    Serial.print("\nSent: ");
+    serializeJson(doc, Serial);
+  #endif
 }
 void switch_cb(uint8_t value, char *src)
 {
@@ -88,7 +85,7 @@ void switch_cb(uint8_t value, char *src)
       sendMSG(msgTypes[0], msgAct[value], src);
     }
   }
-  else /* in LOCKDOWN mode */ 
+  else /* in LOCKDOWN mode */
   {
     if (_makeSwitch(WIN_STOP)) /* Allow AutoOff*/
     {
@@ -100,14 +97,7 @@ void switch_cb(uint8_t value, char *src)
 void _replyStatus()
 {
   uint8_t a = getWin_state();
-  if (a == 0)
-  {
-    sendMSG(msgTypes[1], msgInfo[0], msgInfo[4]);
-  }
-  else
-  {
-    sendMSG(msgTypes[1], msgInfo[0], msgAct[a]);
-  }
+  sendMSG(msgTypes[1], msgInfo[0], msgAct[a]);
 }
 void _replyQuery()
 {
@@ -123,7 +113,7 @@ void _replyQuery()
   sprintf(clk2, "%04d-%02d-%02d %02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour + day_light, tm->tm_min, tm->tm_sec);
 
   sprintf(t, "ver[%s], MCU[%s], DualSW[%s], BootP[%s], eProtect[%s], boot[%s],Auto_off[%s %dsec], Lockdown[%d]",
-          VER, MCU_TYPE, DualSW ? "YES" : "NO", getP_OK ? "OK" : "FAIL", Err_Protect ? "YES" : "NO", clk2, AutoOff ? "YES" : "NO", AutoOff_duration,Lockdown);
+          VER, MCU_TYPE, DualSW ? "YES" : "NO", getP_OK ? "OK" : "FAIL", Err_Protect ? "YES" : "NO", clk2, AutoOff ? "YES" : "NO", AutoOff_duration, Lockdown ? "YES" : "NO");
   sendMSG(msgTypes[1], msgInfo[1], t);
 }
 void _Actions_cb(const char *KW2)
@@ -326,6 +316,14 @@ void read_buttSwitch()
   {
     switch_cb(switchRead, msgInfo[5]);
   }
+  if (DualSW)
+  {
+    uint8_t switchRead = buttSwitchEXT[0]->getValue(); /*  0: no change; 1: up; 2: down; 3: off */
+    if (switchRead != 0)
+    {
+      switch_cb(switchRead, msgInfo[8]);
+    }
+  }
 }
 
 void autoOff_looper()
@@ -429,9 +427,9 @@ bool checkLockdown()
 void setup()
 {
   start_output_gpios();
-  start_buttSW();
   Serial.begin(9600);
   request_remoteParameters();
+  start_buttSW();
   postBoot_err_notification();
 }
 void loop()
