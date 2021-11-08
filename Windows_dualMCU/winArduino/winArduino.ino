@@ -145,19 +145,19 @@ uint8_t _getRelay_state()
 
   if (relup == !RELAY_ON && reldown == !RELAY_ON)
   {
-    return WIN_STOP; // value 3
+    return WIN_STOP; 
   }
   else if (relup == RELAY_ON && reldown == !RELAY_ON)
   {
-    return WIN_UP; // value 1
+    return WIN_UP;
   }
   else if (relup == !RELAY_ON && reldown == RELAY_ON)
   {
-    return WIN_DOWN; // value 2
+    return WIN_DOWN;
   }
   else
   {
-    return WIN_ERR; // value 0
+    return WIN_ERR;
   }
 }
 bool _makeSwitch(uint8_t state)
@@ -224,8 +224,8 @@ bool _check_Lockdown_state()
 }
 void readSwitch_looper()
 {
-  uint8_t switchRead = buttSwitch.read(); /*  0: err; 1: up; 2: down; 3: stop; 4: nochange*/
-  if (switchRead != 0 && switchRead != 4)
+  uint8_t switchRead = buttSwitch.read(); /*  0: stop; 1: up; 2: down; 3:err ; 4: nochange*/
+  if (switchRead <3)
   {
     switch_cb(switchRead, msgInfo[5]);
   }

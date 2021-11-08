@@ -8,8 +8,8 @@
 
 enum sys_states : const uint8_t
 {
-    WIN_ERR,
+    WIN_STOP,
     WIN_UP,
     WIN_DOWN,
-    WIN_STOP,
+    WIN_ERR,
 };

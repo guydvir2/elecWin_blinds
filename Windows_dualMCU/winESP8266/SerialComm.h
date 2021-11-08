@@ -1,13 +1,12 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
-const char *winStates[] = {"Error", "up", "down", "off"};
+const char *winStates[] = {"off", "up", "down", "Error"};
 const char *msgKW[] = {"from", "type", "i", "i_ext"};
 const char *msgTypes[] = {"act", "info", "error"};
 const char *msgAct[] = {winStates[0], winStates[1], winStates[2], winStates[3], "reset_MCU", "Auto-Off", "lockdown_on", "lockdown_off"};
 const char *msgInfo[] = {"status", "query", "boot_p", "Boot", "error", "button", "MQTT", "ping", "Ext_button"};
 const char *msgErrs[] = {"Comm", "Parameters", "Boot", "unKnown-error"};
-
 
 extern void Serial_CB(JsonDocument &_doc);
 extern myIOT2 iot;

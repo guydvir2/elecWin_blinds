@@ -10,7 +10,6 @@ uint8_t AutoOff_duration = 60;
 uint8_t btype_2 = 2; // Button Type
 time_t bootTime;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-const uint8_t MIN2RESET_BAD_P = 30; /* Minutes to reset due to not getting Remote Parameters */
 
 bool getP_OK = false; /* Flag, external parameters got OK ? */
 
@@ -47,6 +46,7 @@ void request_remoteParameters(uint8_t _waitDuration = 15)
 }
 void reset_fail_load_parameters()
 {
+    const uint8_t MIN2RESET_BAD_P = 30; /* Minutes to reset due to not getting Remote Parameters */
     if (getP_OK == false && millis() > MIN2RESET_BAD_P * 60000UL)
     {
         sendMSG(msgTypes[2], msgErrs[1]);

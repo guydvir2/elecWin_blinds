@@ -5,7 +5,7 @@
 SoftwareSerial mySerial(9, 8); // RX, TX
 #endif
 
-const char *winStates[] = {"Error", "up", "down", "off"};
+const char *winStates[] = {"off", "up", "down", "Error"};
 const char *msgKW[] = {"from", "type", "i", "i_ext"};
 const char *msgTypes[] = {"act", "info", "error"};
 const char *msgAct[] = {winStates[0], winStates[1], winStates[2], winStates[3], "reset_MCU", "Auto-Off", "lockdown_on", "lockdown_off"};
@@ -60,4 +60,3 @@ void readSerial()
         }
     }
 }
-

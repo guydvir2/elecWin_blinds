@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-#define VER "Arduino_v1.62"
+#define VER "Arduino_v1.7"
 #define MCU_TYPE "ProMini"
 #define DEV_NAME "MCU"
 
@@ -18,10 +18,10 @@
 
 enum sys_states : const uint8_t
 {
-    WIN_ERR,
+    WIN_STOP,
     WIN_UP,
     WIN_DOWN,
-    WIN_STOP,
+    WIN_ERR,
 };
 
 void (*resetFunc)(void) = 0;
