@@ -25,20 +25,20 @@ void _update_bootP(JsonDocument &_doc)
 
     getP_OK = true;
 }
-void _ask_bootP()
+void _send_P_request()
 {
     sendMSG(msgTypes[1], msgInfo[2]); /* calling for remote parameters */
 }
 void request_remoteParameters(uint8_t _waitDuration = 15)
 {
     long last_req = millis();
-    _ask_bootP();
+    _send_P_request();
     while (millis() < _waitDuration * 1000 && getP_OK == false) /* Wait to get parameters */
     {
         if (millis() - last_req > 2000) /* ask again */
         {
             last_req = millis();
-            _ask_bootP();
+            _send_P_request();
         }
         readSerial();
         delay(50);
