@@ -1,10 +1,4 @@
-bool readfile_ok = false;
-bool useAutoOff = false;
-bool doubleSW = false;
-bool err_protect = false;
-bool Lockdown = false;
-uint8_t autoOff_time = 200;
-uint8_t btype_2 = 2;
+#include <Arduino.h>
 
 char *sketch_paramfile = "/sketch_param.json";
 StaticJsonDocument<JSON_SIZE_IOT> paramJSON;
@@ -12,15 +6,6 @@ StaticJsonDocument<JSON_SIZE_SKETCH> sketchJSON;
 
 extern myIOT2 iot;
 
-void update_vars(JsonDocument &DOC)
-{
-  useAutoOff = DOC["useAutoOff"];
-  autoOff_time = DOC["autoOff_time"];
-  err_protect = DOC["err_protect"];
-  doubleSW = DOC["doubleSW"];
-  btype_2 = DOC["btype_2"];
-  Lockdown = DOC["Lockdown"];
-}
 void startRead_parameters()
 {
   String sketch_defs = "{\"useAutoOff\":false,\"autoOff_time\":60,\"doubleSW\":false,\"err_protect\":false,\"btype_2\":2, \"Lockdown\":false}";

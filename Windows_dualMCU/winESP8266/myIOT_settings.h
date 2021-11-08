@@ -1,6 +1,7 @@
-extern void sendMSG(const char *msgtype, const char *addinfo, const char *info2 = "0");
-char *ext_topic = "myHome/Windows/lockdown";
 #define EXT_TOPIC_EN true
+char *ext_topic = "myHome/Windows/lockdown";
+
+MQTT_msg extTopic_msg; /* ExtTopic*/
 
 void addiotnalMQTT(char *incoming_msg)
 {
@@ -73,21 +74,23 @@ void startIOTservices()
     iot.useDebug = paramJSON["useDebugLog"];
     iot.debug_level = paramJSON["debug_level"];
     iot.useBootClockLog = paramJSON["useBootClockLog"];
+    
     iot.useextTopic = EXT_TOPIC_EN;
     iot.extTopic[0] = ext_topic;
+    iot.extTopic_msgArray[0] = &extTopic_msg;
+
     strcpy(iot.deviceTopic, paramJSON["deviceTopic"]);
     strcpy(iot.prefixTopic, paramJSON["prefixTopic"]);
     strcpy(iot.addGroupTopic, paramJSON["groupTopic"]);
-
     iot.start_services(addiotnalMQTT);
 }
 void lockdown_looper()
 {
     if (iot.extTopic_newmsg_flag)
     {
-        if (strcmp(iot.extTopic_msg.from_topic, ext_topic) == 0)
+        if (strcmp(extTopic_msg.from_topic, ext_topic) == 0)
         {
-            if (strcmp(iot.extTopic_msg.msg, "1") == 0)
+            if (strcmp(extTopic_msg.msg, "1") == 0)
             {
                 if (Lockdown)
                 {
@@ -99,7 +102,7 @@ void lockdown_looper()
                     iot.pub_msg("[Lockdown]: igonred");
                 }
             }
-            else if (strcmp(iot.extTopic_msg.msg, "0") == 0)
+            else if (strcmp(extTopic_msg.msg, "0") == 0)
             {
                 if (Lockdown)
                 {
