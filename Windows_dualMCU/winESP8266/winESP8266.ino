@@ -1,89 +1,15 @@
 #include <myIOT2.h>
-#define DEV_NAME "WEMOS_mini"
-#define JSON_SIZE_IOT 400
-#define JSON_SIZE_SKETCH 300
-#define JSON_SERIAL_SIZE 250
-#define VER "ESP8266_V1.2b"
-
-myIOT2 iot;
-
-enum sys_states : const uint8_t
-{
-        WIN_ERR,
-        WIN_UP,
-        WIN_DOWN,
-        WIN_STOP,
-};
-
-const char *winStates[] = {"Error", "up", "down", "off"};
-const char *msgKW[] = {"from", "type", "i", "i_ext"};
-const char *msgTypes[] = {"act", "info", "error"};
-const char *msgAct[] = {winStates[0], winStates[1], winStates[2], winStates[3], "reset_MCU", "Auto-Off", "lockdown_on", "lockdown_off"};
-const char *msgInfo[] = {"status", "query", "boot_p", "Boot", "error", "button", "MQTT", "ping", "Ext_button"};
-const char *msgErrs[] = {"Comm", "Parameters", "Boot", "unKnown-error"};
-
+#include "constants.h"
+#include "SerialComm.h"
+#include "Serial_bootParaemters.h"
 #include "win_param.h"
 #include "myIOT_settings.h"
+
+myIOT2 iot;
 
 bool pingOK = false;
 unsigned long last_success_ping_clock = 0;
 
-void ping_looper(uint8_t loop_period = 10)
-{
-        static unsigned long last_ping_clock = 0;
-        static bool err_notification = false;
-        const uint8_t extra_time_to_err = 1;
-
-        if (pingOK == false && err_notification == false && (last_ping_clock != 0 && millis() - last_ping_clock > 1000)) /* Notify reach failure*/
-        {
-                err_notification = true;
-                iot.pub_log("[Ping]: [Fail] reaching MCU");
-        }
-        else if (pingOK && err_notification) /* Notify restore Ping*/
-        {
-                err_notification = false;
-        }
-
-        if (millis() - last_success_ping_clock > loop_period * 60000UL + 1000 * extra_time_to_err && pingOK) /* Change state to fail */
-        {
-                pingOK = false;
-        }
-        else if (millis() - last_ping_clock > loop_period * 60000UL || last_ping_clock == 0) /* init sending ping due to time */
-        {
-                last_ping_clock = millis();
-                sendMSG(msgTypes[1], msgInfo[7]);
-        }
-}
-void sendMSG(const char *msgtype, const char *addinfo, const char *info2)
-{
-        StaticJsonDocument<JSON_SERIAL_SIZE> doc;
-
-        doc[msgKW[0]] = DEV_NAME;
-        doc[msgKW[1]] = msgtype;
-        doc[msgKW[2]] = addinfo;
-        doc[msgKW[3]] = info2;
-
-        serializeJson(doc, Serial); /* Sending MSG over serial to other MCU */
-}
-void send_boot_parameters()
-{
-        StaticJsonDocument<JSON_SERIAL_SIZE> doc;
-
-        doc[msgKW[0]] = DEV_NAME;
-        doc[msgKW[1]] = msgTypes[1];
-        doc[msgKW[2]] = msgInfo[2];
-
-        /* Following parameters will update from flash */
-        doc["err_p"] = err_protect;
-        doc["dub_sw"] = doubleSW;
-        doc["t_out"] = useAutoOff;
-        doc["t_out_d"] = autoOff_time;
-        doc["boot_t"] = (long)iot.now();
-        doc["btype_2"] = btype_2;
-        doc["Lockdown"] = Lockdown;
-
-        serializeJson(doc, Serial);
-}
 void Serial_CB(JsonDocument &_doc)
 {
         char outmsg[150];
@@ -131,7 +57,7 @@ void Serial_CB(JsonDocument &_doc)
         }
         else if (strcmp(TYPE, msgTypes[0]) == 0) /*  Actions */
         {
-                if (strcmp(INFO, msgAct[WIN_UP]) == 0 || strcmp(INFO, msgAct[WIN_DOWN]) == 0 || strcmp(INFO, msgAct[WIN_STOP]) == 0 || strcmp(INFO, msgAct[4]) == 0)
+                if (strcmp(INFO, msgAct[WIN_UP]) == 0 || strcmp(INFO, msgAct[WIN_DOWN]) == 0 || strcmp(INFO, msgAct[WIN_STOP]) == 0 || strcmp(INFO, msgAct[5]) == 0)
                 {
                         sprintf(outmsg, "[%s]: Window switched [%s]", INFO2, INFO);
                         iot.pub_msg(outmsg);
@@ -143,26 +69,33 @@ void Serial_CB(JsonDocument &_doc)
                 iot.pub_msg(outmsg);
         }
 }
-void readSerial()
-{
-        if (Serial.available())
-        {
-                StaticJsonDocument<JSON_SERIAL_SIZE> doc;
-                DeserializationError error = deserializeJson(doc, Serial);
+void ping_looper(uint8_t loop_period = 10)
 
-                if (!error)
-                {
-                        Serial_CB(doc);
-                }
-                else
-                {
-                        char aa[40];
-                        sprintf(aa, "[%s]: [%s]; from[%s]", "Error", "Recv-error", DEV_NAME);
-                        iot.pub_msg(aa);
-                }
+{
+        static unsigned long last_ping_clock = 0;
+        static bool err_notification = false;
+        const uint8_t extra_time_to_err = 1;
+
+        if (pingOK == false && err_notification == false && (last_ping_clock != 0 && millis() - last_ping_clock > 1000)) /* Notify reach failure*/
+        {
+                err_notification = true;
+                iot.pub_log("[Ping]: [Fail] reaching MCU");
+        }
+        else if (pingOK && err_notification) /* Notify restore Ping*/
+        {
+                err_notification = false;
+        }
+
+        if (millis() - last_success_ping_clock > loop_period * 60000UL + 1000 * extra_time_to_err && pingOK) /* Change state to fail */
+        {
+                pingOK = false;
+        }
+        else if (millis() - last_ping_clock > loop_period * 60000UL || last_ping_clock == 0) /* init sending ping due to time */
+        {
+                last_ping_clock = millis();
+                sendMSG(msgTypes[1], msgInfo[7]);
         }
 }
-
 void setup()
 {
         startRead_parameters();
@@ -174,6 +107,6 @@ void loop()
 {
         iot.looper();
         lockdown_looper();
-        readSerial();
         ping_looper(30);
+        readSerial();
 }
