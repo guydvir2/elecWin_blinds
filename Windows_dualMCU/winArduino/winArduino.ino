@@ -145,7 +145,7 @@ uint8_t _getRelay_state()
 
   if (relup == !RELAY_ON && reldown == !RELAY_ON)
   {
-    return WIN_STOP; 
+    return WIN_STOP;
   }
   else if (relup == RELAY_ON && reldown == !RELAY_ON)
   {
@@ -225,7 +225,7 @@ bool _check_Lockdown_state()
 void readSwitch_looper()
 {
   uint8_t switchRead = buttSwitch.read(); /*  0: stop; 1: up; 2: down; 3:err ; 4: nochange*/
-  if (switchRead <3)
+  if (switchRead < 3)
   {
     switch_cb(switchRead, msgInfo[5]);
   }
@@ -238,6 +238,25 @@ void readSwitch_looper()
     }
   }
 }
+
+// void read_rockerSwitch()
+// {
+//   static bool lastState_up = digitalRead(SW_UP_PIN);
+//   static bool lastState_down = digitalRead(SW_DOWN_PIN);
+
+//   bool cur_up_0 = digitalRead(SW_UP_PIN);
+//   bool cur_down_0 = digitalRead(SW_DOWN_PIN);
+
+//   if (cur_down_0 != lastState_down || cur_up_0 != lastState_up)
+//   {
+//     delay(debounce);
+//     bool cur_up_1 = digitalRead(SW_UP_PIN);
+//     bool cur_down_1 = digitalRead(SW_DOWN_PIN);
+//     if (cur_down_1 == cur_down_0 && cur_up_0 == cur_up_0)
+//     {
+//     }
+//   }
+// }
 void autoOff_looper()
 {
   if (AutoOff && autoOff_clock != 0)

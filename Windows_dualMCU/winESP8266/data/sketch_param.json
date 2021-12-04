@@ -1,6 +1,6 @@
 {
     "useAutoOff": true,
-    "autoOff_time": 50,
+    "autoOff_time": 60,
     "doubleSW": false,
     "err_protect": false,
     "Lockdown":true,
