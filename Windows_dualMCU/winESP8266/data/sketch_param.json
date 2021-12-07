@@ -1,7 +1,7 @@
 {
     "useAutoOff": true,
-    "autoOff_time": 50,
-    "doubleSW": false,
+    "autoOff_time": 100,
+    "doubleSW": true,
     "err_protect": false,
     "Lockdown":true,
     "btype_2": 2,

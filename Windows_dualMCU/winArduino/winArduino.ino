@@ -128,7 +128,7 @@ void start_buttSW()
     buttSwitchEXT[0] = &buttSwitchExt;
     buttSwitchEXT[0]->pin0 = SW2_UP_PIN;
     buttSwitchEXT[0]->pin1 = SW2_DOWN_PIN;
-    buttSwitchEXT[0]->buttonType = btype_2;
+    buttSwitchEXT[0]->buttonType = 2;
     buttSwitchEXT[0]->start();
   }
 }
@@ -145,7 +145,7 @@ uint8_t _getRelay_state()
 
   if (relup == !RELAY_ON && reldown == !RELAY_ON)
   {
-    return WIN_STOP; 
+    return WIN_STOP;
   }
   else if (relup == RELAY_ON && reldown == !RELAY_ON)
   {
@@ -222,19 +222,22 @@ bool _check_Lockdown_state()
     return 0;
   }
 }
+
 void readSwitch_looper()
 {
   uint8_t switchRead = buttSwitch.read(); /*  0: stop; 1: up; 2: down; 3:err ; 4: nochange*/
-  if (switchRead <3)
+  if (switchRead < 3)
   {
     switch_cb(switchRead, msgInfo[5]);
+    return;
   }
   if (DualSW)
   {
-    uint8_t switchRead = buttSwitchEXT[0]->read(); /*  0: no change; 1: up; 2: down; 3: off */
-    if (switchRead != 0)
+    uint8_t switchRead2 = buttSwitchEXT[0]->read(); /*  0: no change; 1: up; 2: down; 3: off */
+    if (switchRead2 < 3)
     {
-      switch_cb(switchRead, msgInfo[8]);
+      switch_cb(switchRead2, msgInfo[8]);
+      return;
     }
   }
 }

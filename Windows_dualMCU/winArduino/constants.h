@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-#define VER "Arduino_v1.7"
+#define VER "Arduino_v1.75"
 #define MCU_TYPE "ProMini"
 #define DEV_NAME "MCU"
 
