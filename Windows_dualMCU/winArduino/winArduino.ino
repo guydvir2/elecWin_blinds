@@ -21,6 +21,11 @@ void _replyQuery()
   char t[250];
   char clk2[25];
   uint8_t day_light = 3;
+  bootTime = 1641219475;
+#define TZ_Asia_Jerusalem PSTR("IST-2IDT,M3.4.4/26,M10.5.0")
+  // const char ntpServer = "pool.ntp.org";
+  // const char *ntpServer2 = "il.pool.ntp.org";
+  // configTime(TZ_Asia_Jerusalem, ntpServer2, ntpServer);
   struct tm *tm = localtime(&bootTime);
   if (tm->tm_mon >= 10 && tm->tm_mon < 4)
   {

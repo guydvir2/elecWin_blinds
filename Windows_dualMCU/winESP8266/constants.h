@@ -4,7 +4,7 @@
 #define JSON_SIZE_IOT 400
 #define JSON_SIZE_SKETCH 300
 #define JSON_SERIAL_SIZE 250
-#define VER "ESP8266_V1.4"
+#define VER "ESP8266_V1.46"
 
 enum sys_states : const uint8_t
 {

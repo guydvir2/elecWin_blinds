@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include <myIOT2.h>
 #include "constants.h"
 #include "SerialComm.h"
@@ -61,20 +62,21 @@ void Serial_CB(JsonDocument &_doc)
                 {
                         sprintf(outmsg, "[%s]: Window switched [%s]", INFO2, INFO);
                         iot.pub_msg(outmsg);
+                        iot.pub_state((char *)INFO, 0); // Publishing State!
                 }
         }
         else if (strcmp(TYPE, msgTypes[2]) == 0) /* Errors  */
         {
                 sprintf(outmsg, "[%s]: [%s] [%s] [%s]", TYPE, FROM, INFO, INFO2);
-                iot.pub_msg(outmsg);
+                iot.pub_log(outmsg);
         }
 }
 void ping_looper(uint8_t loop_period = 10)
-
 {
         static unsigned long last_ping_clock = 0;
         static bool err_notification = false;
         const uint8_t extra_time_to_err = 1;
+        const int time_constant = 1000;
 
         if (pingOK == false && err_notification == false && (last_ping_clock != 0 && millis() - last_ping_clock > 1000)) /* Notify reach failure*/
         {
@@ -84,13 +86,14 @@ void ping_looper(uint8_t loop_period = 10)
         else if (pingOK && err_notification) /* Notify restore Ping*/
         {
                 err_notification = false;
+                iot.pub_log("[Ping]: [Restored] reaching MCU");
         }
 
-        if (millis() - last_success_ping_clock > loop_period * 60000UL + 1000 * extra_time_to_err && pingOK) /* Change state to fail */
+        if (millis() - last_success_ping_clock > loop_period * time_constant + 1000 * extra_time_to_err && pingOK) /* fail getting ping back */
         {
-                pingOK = false;
+                pingOK = false;/* Change state to fail */
         }
-        else if (millis() - last_ping_clock > loop_period * 60000UL || last_ping_clock == 0) /* init sending ping due to time */
+        else if (millis() - last_ping_clock > loop_period * time_constant || last_ping_clock == 0) /* init sending ping due to time */
         {
                 last_ping_clock = millis();
                 sendMSG(msgTypes[1], msgInfo[7]);

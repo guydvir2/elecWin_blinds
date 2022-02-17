@@ -74,7 +74,9 @@ void startIOTservices()
     iot.useDebug = paramJSON["useDebugLog"];
     iot.debug_level = paramJSON["debug_level"];
     iot.useBootClockLog = paramJSON["useBootClockLog"];
-    
+    iot.useNetworkReset = paramJSON["useNetworkReset"];
+    iot.noNetwork_reset = paramJSON["noNetwork_reset"];
+
     iot.useextTopic = EXT_TOPIC_EN;
     iot.extTopic[0] = ext_topic;
     iot.extTopic_msgArray[0] = &extTopic_msg;

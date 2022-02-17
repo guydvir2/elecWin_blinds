@@ -6,10 +6,10 @@
     "useResetKeeper": false,
     "useNetworkReset": true,
     "useBootClockLog": true,
-    "deviceTopic": "saloonExit",
+    "deviceTopic": "testRoom",
     "groupTopic": "Windows",
     "prefixTopic": "myHome",
-    "debug_level": 2,
-    "noNetwork_reset": 20,
+    "debug_level": 0,
+    "noNetwork_reset": 5,
     "ver":0.2
 }
