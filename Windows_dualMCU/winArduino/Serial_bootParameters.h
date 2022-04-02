@@ -46,7 +46,7 @@ void request_remoteParameters(uint8_t _waitDuration = 20)
 }
 void reset_fail_load_parameters()
 {
-    const uint8_t MIN2RESET_BAD_P = 30; /* Minutes to reset due to not getting Remote Parameters */
+    const uint8_t MIN2RESET_BAD_P = 10; /* Minutes to reset due to not getting Remote Parameters */
     if (!getP_OK && millis() > MIN2RESET_BAD_P * 60000UL)
     {
         SerialComm.sendMsg(DEV_NAME,msgTypes[2], msgErrs[1]);
@@ -57,7 +57,6 @@ void reset_fail_load_parameters()
 void postBoot_err_notification()
 {
     SerialComm.sendMsg(DEV_NAME,msgTypes[1], msgInfo[3]);
-
 
     if (year(bootTime) == 1970)
     {

@@ -10,7 +10,7 @@ mySerialMSG SerialComm(DEV_NAME, COMM_SERIAL);
 
 #include "Serial_bootParameters.h"
 
-bool lockdown_state = false; /* Flag, lockdown command */
+bool lockdown_state = false;
 unsigned long autoOff_clock = 0;
 
 // ~~~~~~~~~~~~~ Callbacks ~~~~~~~~~~~~~~~

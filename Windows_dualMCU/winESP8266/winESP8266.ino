@@ -76,7 +76,7 @@ void incomeMSG_cb(JsonDocument &_doc)
         else if (strcmp(TYPE, msgTypes[2]) == 0 || strcmp(TYPE, "system") == 0) /* Errors  or SerialMSG notifications*/
         {
                 sprintf(outmsg, "[%s]: [%s] [%s] [%s]", TYPE, FROM, INFO, INFO2);
-                iot.pub_msg(outmsg);
+                iot.pub_log(outmsg);
         }
 }
 void send_boot_parameters()

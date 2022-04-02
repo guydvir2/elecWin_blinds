@@ -13,7 +13,6 @@
 #define REL_DOWN_PIN 10 /* OUTUPT to relay device */
 #define REL_UP_PIN 11   /* OUTUPT to relay device */
 
-#define DEBUG_MODE false
 #define JSON_SERIAL_SIZE 256
 
 enum sys_states : const uint8_t
