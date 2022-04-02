@@ -1,13 +1,10 @@
-#include <Arduino.h>
 #include <myIOT2.h>
-#include "constants.h"
+#include "defs.h"
 #include "SerialComm.h"
-#include "Serial_bootParaemters.h"
 #include "win_param.h"
 #include "myIOT_settings.h"
 
 myIOT2 iot;
-
 bool pingOK = false;
 unsigned long last_success_ping_clock = 0;
 
@@ -19,7 +16,7 @@ void Serial_CB(JsonDocument &_doc)
         const char *INFO = _doc[msgKW[2]];
         const char *INFO2 = _doc[msgKW[3]];
 
-        if (strcmp(TYPE, msgTypes[1]) == 0)      /* Getting Info */
+        if (strcmp(TYPE, msgTypes[1]) == 0) /* Getting Info */
         {
                 if (strcmp(INFO, msgInfo[0]) == 0) /* status */
                 {
@@ -91,7 +88,7 @@ void ping_looper(uint8_t loop_period = 10)
 
         if (millis() - last_success_ping_clock > loop_period * time_constant + 1000 * extra_time_to_err && pingOK) /* fail getting ping back */
         {
-                pingOK = false;/* Change state to fail */
+                pingOK = false; /* Change state to fail */
         }
         else if (millis() - last_ping_clock > loop_period * time_constant || last_ping_clock == 0) /* init sending ping due to time */
         {
@@ -101,9 +98,8 @@ void ping_looper(uint8_t loop_period = 10)
 }
 void setup()
 {
-        startRead_parameters();
+        readFlash_parameters();
         startIOTservices();
-        endRead_parameters();
         Serial.begin(9600); /* Serial is defined not using IOT - else it spits all debug msgs */
 }
 void loop()

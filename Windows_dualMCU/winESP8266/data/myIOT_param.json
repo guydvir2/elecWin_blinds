@@ -1,15 +1,18 @@
 {
-    "useSerial": false, 
     "useWDT": true,
     "useOTA": true,
+    "useSerial": false,
+    "useFlashP": true,
     "useDebugLog": true,
     "useResetKeeper": false,
     "useNetworkReset": true,
     "useBootClockLog": true,
+    "useextTopic": true,
+    "debug_level": 0,
+    "noNetwork_reset": 5,
+    "ignore_boot_msg": false,
     "deviceTopic": "testRoom",
     "groupTopic": "Windows",
     "prefixTopic": "myHome",
-    "debug_level": 0,
-    "noNetwork_reset": 5,
-    "ver":0.2
+    "ver": 0.5
 }
