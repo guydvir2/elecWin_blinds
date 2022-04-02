@@ -1,70 +1,70 @@
-#include <Arduino.h>
-
 // ~~~~ Services update via ESP on BOOT ~~~~~
+time_t bootTime;
 bool DualSW = false;     /* 2 Switches Window*/
-bool Err_Protect = true; /* Monitor UP&DOWN pressed together*/
 bool AutoOff = true;     /* Timeout to switch off Relays */
 bool Lockdown = false;   /* lock operations of relays, both MQTT and Switch */
-
-uint8_t AutoOff_duration = 60;
+bool Err_Protect = true; /* Monitor UP&DOWN pressed together*/
 uint8_t btype_2 = 2; // Button Type
-time_t bootTime;
+uint8_t AutoOff_duration = 60;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 bool getP_OK = false; /* Flag, external parameters got OK ? */
 
 void _update_bootP(JsonDocument &_doc)
 {
-    Err_Protect = _doc["err_p"];
     DualSW = _doc["dub_sw"];
     AutoOff = _doc["t_out"];
+    btype_2 = _doc["btype_2"]; /* Button type for external input only. This part is not solved yet */
+    Lockdown = _doc["Lockdown"];
     AutoOff_duration = _doc["t_out_d"];
     bootTime = _doc["boot_t"].as<time_t>();
-    Lockdown = _doc["Lockdown"];
-    btype_2 = _doc["btype_2"]; /* Button type for external input only. This part is not solved yet */
 
     getP_OK = true;
 }
 void _send_P_request()
 {
-    sendMSG(msgTypes[1], msgInfo[2]); /* calling for remote parameters */
+    SerialComm.sendMsg(DEV_NAME,msgTypes[1], msgInfo[2]); /* calling for remote parameters */
 }
-void request_remoteParameters(uint8_t _waitDuration = 15)
+void request_remoteParameters(uint8_t _waitDuration = 20)
 {
-    long last_req = millis();
+    /* _waitDuration should be longer than 12 sec
+    since at boot ESP8266 completes wake cycle around 10 sec 
+    without any connection tolerances
+     */
+    unsigned long last_req = millis();
     _send_P_request();
-    while (millis() < _waitDuration * 1000 && getP_OK == false) /* Wait to get parameters */
+    while (millis() < _waitDuration * 1000 && !getP_OK) /* Wait to get parameters */
     {
-        if (millis() - last_req > 2000) /* ask again */
+        if (millis() - last_req > 1000) /* ask again */
         {
             last_req = millis();
             _send_P_request();
         }
-        readSerial();
+        SerialComm.loop();
         delay(50);
     }
 }
 void reset_fail_load_parameters()
 {
     const uint8_t MIN2RESET_BAD_P = 30; /* Minutes to reset due to not getting Remote Parameters */
-    if (getP_OK == false && millis() > MIN2RESET_BAD_P * 60000UL)
+    if (!getP_OK && millis() > MIN2RESET_BAD_P * 60000UL)
     {
-        sendMSG(msgTypes[2], msgErrs[1]);
+        SerialComm.sendMsg(DEV_NAME,msgTypes[2], msgErrs[1]);
         delay(1000);
         resetFunc();
     }
 }
 void postBoot_err_notification()
 {
-    sendMSG(msgTypes[1], msgInfo[3]);
-    struct tm *tm = localtime(&bootTime);
+    SerialComm.sendMsg(DEV_NAME,msgTypes[1], msgInfo[3]);
 
-    if (tm->tm_year == 70)
+
+    if (year(bootTime) == 1970)
     {
-        sendMSG(msgTypes[2], msgInfo[3], "NTP");
+        SerialComm.sendMsg(DEV_NAME,msgTypes[2], msgInfo[3], "NTP");
     }
     if (getP_OK == false)
     {
-        sendMSG(msgTypes[2], msgInfo[3], "Parameters");
+        SerialComm.sendMsg(DEV_NAME,msgTypes[2], msgInfo[3], "Parameters");
     }
 }

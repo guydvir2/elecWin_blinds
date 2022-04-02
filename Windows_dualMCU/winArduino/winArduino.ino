@@ -1,12 +1,14 @@
+#include <TimeLib.h>
 #include <Arduino.h>
-#include <time.h>
 #include <buttonPresses.h>
+#include <mySerialMSG.h>
 #include "constants.h"
-#include "SerialComm.h"
-#include "Serial_bootParameters.h"
 
 buttonPresses buttSwitch;
 buttonPresses *buttSwitchEXT[] = {nullptr};
+mySerialMSG SerialComm(DEV_NAME, COMM_SERIAL);
+
+#include "Serial_bootParameters.h"
 
 bool lockdown_state = false; /* Flag, lockdown command */
 unsigned long autoOff_clock = 0;
@@ -14,24 +16,21 @@ unsigned long autoOff_clock = 0;
 // ~~~~~~~~~~~~~ Callbacks ~~~~~~~~~~~~~~~
 void _replyStatus()
 {
-  sendMSG(msgTypes[1], msgInfo[0], msgAct[_getRelay_state()]);
+  SerialComm.sendMsg(DEV_NAME, msgTypes[1], msgInfo[0], msgAct[_getRelay_state()]);
 }
 void _replyQuery()
 {
   char t[250];
   char clk2[25];
   uint8_t day_light = 3;
-  struct tm *tm = localtime(&bootTime);
-  if (tm->tm_mon >= 10 && tm->tm_mon < 4)
+  if (month(bootTime) > 9 && month(bootTime) < 4)
   {
     day_light = 2;
   }
-
-  sprintf(clk2, "%04d-%02d-%02d %02d:%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour + day_light, tm->tm_min, tm->tm_sec);
-
+  sprintf(clk2, "%04d-%02d-%02d %02d:%02d:%02d", year(bootTime), month(bootTime), day(bootTime), hour(bootTime) + day_light, minute(bootTime), second(bootTime));
   sprintf(t, "ver[%s], MCU[%s], DualSW[%s], BootP[%s], eProtect[%s], boot[%s],Auto_off[%s %dsec], Lockdown[%s]",
           VER, MCU_TYPE, DualSW ? "YES" : "NO", getP_OK ? "OK" : "FAIL", Err_Protect ? "YES" : "NO", clk2, AutoOff ? "YES" : "NO", AutoOff_duration, Lockdown ? "YES" : "NO");
-  sendMSG(msgTypes[1], msgInfo[1], t);
+  SerialComm.sendMsg(DEV_NAME, msgTypes[1], msgInfo[1], t);
 }
 void _Actions_cb(const char *KW2)
 {
@@ -76,10 +75,10 @@ void _Infos_cb(JsonDocument &_doc)
   }
   else if (strcmp(_doc[msgKW[2]], msgInfo[7]) == 0) /* Ping back */
   {
-    sendMSG(msgTypes[1], msgInfo[7]);
+    SerialComm.sendMsg(DEV_NAME, msgTypes[1], msgInfo[7]);
   }
 }
-void Serial_CB(JsonDocument &_doc)
+void incomeMSG_cb(JsonDocument &_doc)
 {
   if (strcmp(_doc[msgKW[1]], msgTypes[0]) == 0) /* Got Actions */
   {
@@ -96,16 +95,29 @@ void switch_cb(uint8_t value, char *src)
   {
     if (_makeSwitch(value))
     {
-      sendMSG(msgTypes[0], msgAct[value], src);
+      SerialComm.sendMsg(DEV_NAME, msgTypes[0], msgAct[value], src);
     }
   }
   else /* in LOCKDOWN mode */
   {
     if (_makeSwitch(WIN_STOP)) /* Allow AutoOff*/
     {
-      sendMSG(msgTypes[0], msgAct[WIN_STOP], src);
+      SerialComm.sendMsg(DEV_NAME, msgTypes[0], msgAct[WIN_STOP], src);
     }
   }
+}
+
+void init_serialMSG()
+{
+  COMM_SERIAL.begin(9600);
+
+  SerialComm.KW[0] = msgKW[0];
+  SerialComm.KW[1] = msgKW[1];
+  SerialComm.KW[2] = msgKW[2];
+  SerialComm.KW[3] = msgKW[3];
+
+  SerialComm.usePings = true;
+  SerialComm.start(incomeMSG_cb);
 }
 
 // ~~~~~~ Handling Inputs & Outputs ~~~~~~~
@@ -203,11 +215,11 @@ void update_lockdown_state(bool _state)
   if (_state)
   {
     switch_cb(WIN_DOWN, msgAct[6]);
-    sendMSG(msgTypes[1], msgAct[6]);
+    SerialComm.sendMsg(DEV_NAME, msgTypes[1], msgAct[6]);
   }
   else
   {
-    sendMSG(msgTypes[1], msgAct[7]);
+    SerialComm.sendMsg(DEV_NAME, msgTypes[1], msgAct[7]);
   }
   lockdown_state = _state;
 }
@@ -238,25 +250,6 @@ void readSwitch_looper()
     }
   }
 }
-
-// void read_rockerSwitch()
-// {
-//   static bool lastState_up = digitalRead(SW_UP_PIN);
-//   static bool lastState_down = digitalRead(SW_DOWN_PIN);
-
-//   bool cur_up_0 = digitalRead(SW_UP_PIN);
-//   bool cur_down_0 = digitalRead(SW_DOWN_PIN);
-
-//   if (cur_down_0 != lastState_down || cur_up_0 != lastState_up)
-//   {
-//     delay(debounce);
-//     bool cur_up_1 = digitalRead(SW_UP_PIN);
-//     bool cur_down_1 = digitalRead(SW_DOWN_PIN);
-//     if (cur_down_1 == cur_down_0 && cur_up_0 == cur_up_0)
-//     {
-//     }
-//   }
-// }
 void autoOff_looper()
 {
   if (AutoOff && autoOff_clock != 0)
@@ -271,15 +264,16 @@ void autoOff_looper()
 void setup()
 {
   start_output_gpios();
-  Serial.begin(9600);
-  request_remoteParameters();
-  start_buttSW();
+  init_serialMSG();           /* Start SerialComm between MCUs*/
+  request_remoteParameters(); /* Request Flash Parameter from ESP8266 CPU via SerialComm*/
+  start_buttSW();             /* init input Button instances */
   postBoot_err_notification();
 }
 void loop()
 {
   readSwitch_looper();
-  readSerial();
+  SerialComm.loop();
   autoOff_looper();
+
   reset_fail_load_parameters();
 }

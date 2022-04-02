@@ -28,56 +28,56 @@ void incomeMSG_cb(JsonDocument &_doc)
         const char *INFO = _doc[msgKW[2]];
         const char *INFO2 = _doc[msgKW[3]];
 
-//         if (strcmp(TYPE, msgTypes[1]) == 0)      /* Getting Info */
-//         {
-//                 if (strcmp(INFO, msgInfo[0]) == 0) /* status */
-//                 {
-//                         sprintf(outmsg, "[%s]: %s", INFO, INFO2);
-//                         iot.pub_msg(outmsg);
-//                 }
-//                 else if (strcmp(INFO, msgInfo[1]) == 0) /* Query */
-//                 {
-//                         sprintf(outmsg, "[%s]: %s", INFO, INFO2);
-//                         iot.pub_msg(outmsg);
-//                 }
-//                 else if (strcmp(INFO, msgInfo[2]) == 0) /* boot_p */
-//                 {
-//                         send_boot_parameters();
-//                 }
-//                 else if (strcmp(INFO, msgInfo[3]) == 0) /* Boot */
-//                 {
-//                         sprintf(outmsg, "[%s]: << Power On Boot >>", FROM);
-//                         iot.pub_log(outmsg);
-//                 }
-//                 else if (strcmp(INFO, msgInfo[7]) == 0) /* Ping */
-//                 {
-//                         last_success_ping_clock = millis();
-//                         pingOK = true;
-//                 }
-//                 else if (strcmp(INFO, msgAct[6]) == 0 && Lockdown) /* LOCKDONW_ON */
-//                 {
-//                         sprintf(outmsg, "Locdown: [%s] is locked", FROM);
-//                         iot.pub_log(outmsg);
-//                 }
-//                 else if (strcmp(INFO, msgAct[7]) == 0 && Lockdown) /* LOCKDONW_OFF */
-//                 {
-//                         sprintf(outmsg, "Locdown: [%s] is released", FROM);
-//                         iot.pub_log(outmsg);
-//                 }
-//         }
-//         else if (strcmp(TYPE, msgTypes[0]) == 0) /*  Actions */
-//         {
-//                 if (strcmp(INFO, msgAct[WIN_UP]) == 0 || strcmp(INFO, msgAct[WIN_DOWN]) == 0 || strcmp(INFO, msgAct[WIN_STOP]) == 0 || strcmp(INFO, msgAct[5]) == 0)
-//                 {
-//                         sprintf(outmsg, "[%s]: Window switched [%s]", INFO2, INFO);
-//                         iot.pub_msg(outmsg);
-//                 }
-//         }
-//         else if (strcmp(TYPE, msgTypes[2]) == 0) /* Errors  */
-//         {
-//                 sprintf(outmsg, "[%s]: [%s] [%s] [%s]", TYPE, FROM, INFO, INFO2);
-//                 iot.pub_msg(outmsg);
-//         }
+        if (strcmp(TYPE, msgTypes[1]) == 0) /* Getting Info */
+        {
+                if (strcmp(INFO, msgInfo[0]) == 0) /* status */
+                {
+                        sprintf(outmsg, "[%s]: %s", INFO, INFO2);
+                        iot.pub_msg(outmsg);
+                }
+                else if (strcmp(INFO, msgInfo[1]) == 0) /* Query */
+                {
+                        sprintf(outmsg, "[%s]: %s", INFO, INFO2);
+                        iot.pub_msg(outmsg);
+                }
+                else if (strcmp(INFO, msgInfo[2]) == 0) /* boot_p */
+                {
+                        send_boot_parameters();
+                }
+                else if (strcmp(INFO, msgInfo[3]) == 0) /* Boot */
+                {
+                        sprintf(outmsg, "[%s]: << Power On Boot >>", FROM);
+                        iot.pub_log(outmsg);
+                }
+                // else if (strcmp(INFO, msgInfo[7]) == 0) /* Ping */
+                // {
+                //         last_success_ping_clock = millis();
+                //         pingOK = true;
+                // }
+                else if (strcmp(INFO, msgAct[6]) == 0 && Lockdown) /* LOCKDONW_ON */
+                {
+                        sprintf(outmsg, "Locdown: [%s] is locked", FROM);
+                        iot.pub_log(outmsg);
+                }
+                else if (strcmp(INFO, msgAct[7]) == 0 && Lockdown) /* LOCKDONW_OFF */
+                {
+                        sprintf(outmsg, "Locdown: [%s] is released", FROM);
+                        iot.pub_log(outmsg);
+                }
+        }
+        else if (strcmp(TYPE, msgTypes[0]) == 0) /* Actions */
+        {
+                if (strcmp(INFO, msgAct[WIN_UP]) == 0 || strcmp(INFO, msgAct[WIN_DOWN]) == 0 || strcmp(INFO, msgAct[WIN_STOP]) == 0 || strcmp(INFO, msgAct[5]) == 0)
+                {
+                        sprintf(outmsg, "[%s]: Window switched [%s]", INFO2, INFO);
+                        iot.pub_msg(outmsg);
+                }
+        }
+        else if (strcmp(TYPE, msgTypes[2]) == 0 || strcmp(TYPE, "system") == 0) /* Errors  or SerialMSG notifications*/
+        {
+                sprintf(outmsg, "[%s]: [%s] [%s] [%s]", TYPE, FROM, INFO, INFO2);
+                iot.pub_msg(outmsg);
+        }
 }
 void send_boot_parameters()
 {
@@ -88,7 +88,6 @@ void send_boot_parameters()
         doc[msgKW[2]] = msgInfo[2];
 
         /* Following parameters will update from flash */
-        doc["err_p"] = err_protect;
         doc["dub_sw"] = doubleSW;
         doc["t_out"] = useAutoOff;
         doc["t_out_d"] = autoOff_time;
@@ -101,6 +100,7 @@ void send_boot_parameters()
 
 void setup()
 {
+        read_flashParameter();
         startIOTservices();
         init_serialMSG();
 }

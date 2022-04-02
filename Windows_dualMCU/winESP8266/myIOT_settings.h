@@ -1,4 +1,4 @@
-MQTT_msg extTopic_msg; /* ExtTopic*/
+MQTT_msg lockDown_topic; /* ExtTopic*/
 
 void addiotnalMQTT(char *incoming_msg)
 {
@@ -52,16 +52,16 @@ void startIOTservices()
     iot.useFlashP = true;
     iot.useextTopic = true;
     iot.extTopic[0] = ext_topic;
-    iot.extTopic_msgArray[0] = &extTopic_msg;
+    iot.extTopic_msgArray[0] = &lockDown_topic;
     iot.start_services(addiotnalMQTT);
 }
 void lockdown_looper()
 {
     if (iot.extTopic_newmsg_flag)
     {
-        if (strcmp(extTopic_msg.from_topic, ext_topic) == 0)
+        if (strcmp(lockDown_topic.from_topic, ext_topic) == 0)
         {
-            if (strcmp(extTopic_msg.msg, "1") == 0)
+            if (strcmp(lockDown_topic.msg, "1") == 0)
             {
                 if (Lockdown)
                 {
@@ -73,7 +73,7 @@ void lockdown_looper()
                     iot.pub_msg("[Lockdown]: igonred");
                 }
             }
-            else if (strcmp(extTopic_msg.msg, "0") == 0)
+            else if (strcmp(lockDown_topic.msg, "0") == 0)
             {
                 if (Lockdown)
                 {
