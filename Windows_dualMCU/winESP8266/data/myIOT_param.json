@@ -1,7 +1,7 @@
 {
     "useWDT": true,
     "useOTA": true,
-    "useSerial": true,
+    "useSerial": false,
     "useFlashP": true,
     "useextTopic": true,
     "useResetKeeper": false,

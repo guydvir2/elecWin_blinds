@@ -28,8 +28,8 @@ void _replyQuery()
     day_light = 2;
   }
   sprintf(clk2, "%04d-%02d-%02d %02d:%02d:%02d", year(bootTime), month(bootTime), day(bootTime), hour(bootTime) + day_light, minute(bootTime), second(bootTime));
-  sprintf(t, "ver[%s], MCU[%s], DualSW[%s], BootP[%s], eProtect[%s], boot[%s],Auto_off[%s %dsec], Lockdown[%s]",
-          VER, MCU_TYPE, DualSW ? "YES" : "NO", getP_OK ? "OK" : "FAIL", Err_Protect ? "YES" : "NO", clk2, AutoOff ? "YES" : "NO", AutoOff_duration, Lockdown ? "YES" : "NO");
+  sprintf(t, "ver[%s], MCU[%s], DualSW[%s], BootP[%s], boot[%s],Auto_off[%s %dsec], Lockdown[%s]",
+          VER, MCU_TYPE, DualSW ? "YES" : "NO", getP_OK ? "OK" : "FAIL", clk2, AutoOff ? "YES" : "NO", AutoOff_duration, Lockdown ? "YES" : "NO");
   SerialComm.sendMsg(DEV_NAME, msgTypes[1], msgInfo[1], t);
 }
 void _Actions_cb(const char *KW2)

@@ -3,7 +3,6 @@ time_t bootTime;
 bool DualSW = false;     /* 2 Switches Window*/
 bool AutoOff = true;     /* Timeout to switch off Relays */
 bool Lockdown = false;   /* lock operations of relays, both MQTT and Switch */
-bool Err_Protect = true; /* Monitor UP&DOWN pressed together*/
 uint8_t btype_2 = 2; // Button Type
 uint8_t AutoOff_duration = 60;
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -35,7 +34,7 @@ void request_remoteParameters(uint8_t _waitDuration = 20)
     _send_P_request();
     while (millis() < _waitDuration * 1000 && !getP_OK) /* Wait to get parameters */
     {
-        if (millis() - last_req > 1000) /* ask again */
+        if (millis() - last_req > 2000) /* ask again */
         {
             last_req = millis();
             _send_P_request();

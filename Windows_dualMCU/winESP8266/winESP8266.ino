@@ -30,12 +30,7 @@ void incomeMSG_cb(JsonDocument &_doc)
 
         if (strcmp(TYPE, msgTypes[1]) == 0) /* Getting Info */
         {
-                if (strcmp(INFO, msgInfo[0]) == 0) /* status */
-                {
-                        sprintf(outmsg, "[%s]: %s", INFO, INFO2);
-                        iot.pub_msg(outmsg);
-                }
-                else if (strcmp(INFO, msgInfo[1]) == 0) /* Query */
+                if (strcmp(INFO, msgInfo[0]) == 0 || strcmp(INFO, msgInfo[1]) == 0) /* status || query */
                 {
                         sprintf(outmsg, "[%s]: %s", INFO, INFO2);
                         iot.pub_msg(outmsg);
@@ -49,21 +44,12 @@ void incomeMSG_cb(JsonDocument &_doc)
                         sprintf(outmsg, "[%s]: << Power On Boot >>", FROM);
                         iot.pub_log(outmsg);
                 }
-                // else if (strcmp(INFO, msgInfo[7]) == 0) /* Ping */
-                // {
-                //         last_success_ping_clock = millis();
-                //         pingOK = true;
-                // }
-                else if (strcmp(INFO, msgAct[6]) == 0 && Lockdown) /* LOCKDONW_ON */
+                else if ((strcmp(INFO, msgAct[6]) == 0 || strcmp(INFO, msgAct[7]) == 0) && Lockdown) /* LOCKDONW ON/ OFF  */
                 {
-                        sprintf(outmsg, "Locdown: [%s] is locked", FROM);
+                        sprintf(outmsg, "Locdown: [%s] is %s", FROM,strcmp(INFO, msgAct[6]) == 0?"[locked]":"[released]");
                         iot.pub_log(outmsg);
                 }
-                else if (strcmp(INFO, msgAct[7]) == 0 && Lockdown) /* LOCKDONW_OFF */
-                {
-                        sprintf(outmsg, "Locdown: [%s] is released", FROM);
-                        iot.pub_log(outmsg);
-                }
+
         }
         else if (strcmp(TYPE, msgTypes[0]) == 0) /* Actions */
         {
@@ -73,7 +59,7 @@ void incomeMSG_cb(JsonDocument &_doc)
                         iot.pub_msg(outmsg);
                 }
         }
-        else if (strcmp(TYPE, msgTypes[2]) == 0 || strcmp(TYPE, "system") == 0) /* Errors  or SerialMSG notifications*/
+        else if (strcmp(TYPE, msgTypes[2]) == 0 || strcmp(TYPE, msgTypes[4]) == 0) /* Errors  or SerialMSG notifications*/
         {
                 sprintf(outmsg, "[%s]: [%s] [%s] [%s]", TYPE, FROM, INFO, INFO2);
                 iot.pub_log(outmsg);

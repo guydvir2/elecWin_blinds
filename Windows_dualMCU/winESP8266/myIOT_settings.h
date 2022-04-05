@@ -27,7 +27,7 @@ void addiotnalMQTT(char *incoming_msg)
     }
     else if (strcmp(incoming_msg, "help2") == 0)
     {
-        sprintf(msg, "Help: Commands #3 - [up, down, off, query, reset_MCU, show_flash_param, help2]");
+        sprintf(msg, "Help2: Commands #3 - [up, down, off, query, reset_MCU]");
         iot.pub_msg(msg);
     }
     else if (strcmp(incoming_msg, "query") == 0)
