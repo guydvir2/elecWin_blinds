@@ -6,7 +6,7 @@ SoftwareSerial mySerial(9, 8); // RX, TX
 #endif
 
 const char *winStates[] = {"off", "up", "down", "Error"};
-const char *msgKW[] = {"from", "type", "i", "i_ext"};
+const char *msgKW[] = {"from", "type", "i", "i_ext", "winNum"};
 const char *msgTypes[] = {"act", "info", "error"};
 const char *msgAct[] = {winStates[0], winStates[1], winStates[2], winStates[3], "reset_MCU", "Auto-Off", "lockdown_on", "lockdown_off"};
 const char *msgInfo[] = {"status", "query", "boot_p", "Boot", "error", "button", "MQTT", "ping", "Ext_button"};
@@ -16,18 +16,19 @@ const char *msgErrs[] = {"Comm", "Parameters", "Boot", "unKnown-error"};
 
 extern void Serial_CB(JsonDocument &_doc);
 
-void _constructMSG(JsonDocument &doc, const char *KW1, const char *KW2, const char *KW3)
+void _constructMSG(JsonDocument &doc, const char *KW1, const char *KW2, const char *KW3, const uint8_t KW4)
 {
     doc[msgKW[0]] = DEV_NAME;
     doc[msgKW[1]] = KW1;
     doc[msgKW[2]] = KW2;
     doc[msgKW[3]] = KW3;
+    doc[msgKW[3]] = KW4;
 }
-void sendMSG(const char *msgtype, const char *ext1, const char *ext2 = "0")
+void sendMSG(const char *msgtype, const char *ext1, const char *ext2 = "0", const uint8_t winnum = 0)
 {
     StaticJsonDocument<JSON_SERIAL_SIZE> doc;
 
-    _constructMSG(doc, msgtype, ext1, ext2);
+    _constructMSG(doc, msgtype, ext1, ext2, winnum);
     serializeJson(doc, Serial);
 #if DEBUG_MODE
     Serial.print("\nSent: ");

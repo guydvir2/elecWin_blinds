@@ -1,11 +1,10 @@
 #include <Arduino.h>
 
 // ~~~~ Services update via ESP on BOOT ~~~~~
-bool DualSW = false;     /* 2 Switches Window*/
-bool Err_Protect = true; /* Monitor UP&DOWN pressed together*/
+bool DualSW = false;     /* 2 Switches Window - only for Windows_0 */
 bool AutoOff = true;     /* Timeout to switch off Relays */
 bool Lockdown = false;   /* lock operations of relays, both MQTT and Switch */
-
+uint8_t numWindows = 1;
 uint8_t AutoOff_duration = 60;
 uint8_t btype_2 = 2; // Button Type
 time_t bootTime;
@@ -15,8 +14,8 @@ bool getP_OK = false; /* Flag, external parameters got OK ? */
 
 void _update_bootP(JsonDocument &_doc)
 {
-    Err_Protect = _doc["err_p"];
     DualSW = _doc["dub_sw"];
+    numWindows = _doc["numWindows"];
     AutoOff = _doc["t_out"];
     AutoOff_duration = _doc["t_out_d"];
     bootTime = _doc["boot_t"].as<time_t>();
@@ -61,10 +60,10 @@ void postBoot_err_notification()
 
     if (tm->tm_year == 70)
     {
-        sendMSG(msgTypes[2], msgInfo[3], "NTP");
+        sendMSG(msgTypes[2], msgInfo[3], "NTP"); /* Error time update */
     }
     if (getP_OK == false)
     {
-        sendMSG(msgTypes[2], msgInfo[3], "Parameters");
+        sendMSG(msgTypes[2], msgInfo[3], "Parameters"); /* Error receiving Boot parameters */
     }
 }
